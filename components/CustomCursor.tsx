@@ -2,9 +2,9 @@
 
 import { useEffect, useRef } from 'react'
 
-const TRAIL = 7
-const SIZES  = [34, 27, 21, 16, 12, 9, 6, 4]
-const LERPS  = [0.28, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42, 0.42]
+const TRAIL = 8
+const SIZES = [32, 32,30,  30 , 28, 28,  25,25, 22, 22, 19,19, 16,16, 12,12, 8,8 , 4 , 4,2,2]
+const LERPS = [0.22, 0.72, 0.69, 0.66, 0.63, 0.60, 0.58, 0.56, 0.54]
 
 export default function CustomCursor() {
   const dotsRef     = useRef<(HTMLDivElement | null)[]>(Array(TRAIL + 1).fill(null))
@@ -55,16 +55,7 @@ export default function CustomCursor() {
 
   return (
     <>
-      {/* Comet trail dots */}
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          pointerEvents: 'none',
-          zIndex: 9998,
-          mixBlendMode: 'difference',
-        }}
-      >
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9998, mixBlendMode: 'difference' }}>
         {Array.from({ length: TRAIL + 1 }, (_, i) => {
           const size = SIZES[i] ?? 3
           return (
