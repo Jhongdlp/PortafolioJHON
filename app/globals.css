@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; cursor: none; }
+*, *:hover { cursor: none !important; }
+
+::selection {
+  background: #F26321;
+  color: #0a0a0a;
+}
+
+.projects-section ::selection {
+  background: #e10600;
+  color: #fff;
+}
+
+.cursor-none { cursor: none; }
