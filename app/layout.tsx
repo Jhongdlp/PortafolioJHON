@@ -5,6 +5,7 @@ import CustomCursor from '@/components/CustomCursor'
 import Preloader from '@/components/Preloader'
 import { LanguageProvider } from '@/lib/i18n'
 import { DEFAULT_THEME, THEME_INIT_SCRIPT, ThemeProvider } from '@/lib/theme'
+import { Analytics } from '@vercel/analytics/next'
 
 const anton = Anton({
   weight: '400',
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <CustomCursor />
             <Preloader />
             {children}
+            <Analytics />
           </LanguageProvider>
         </ThemeProvider>
       </body>
