@@ -202,9 +202,11 @@ function EmailPiece({ onOpenForm }: { onOpenForm: () => void }) {
   if (isMobile) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-        <button
+        <motion.button
           type="button"
           onClick={copy}
+          whileHover={{ scale: 1.01, borderColor: 'var(--ink)' }}
+          whileTap={{ scale: 0.98 }}
           style={{
             appearance: 'none',
             background: 'var(--bg-elev)',
@@ -220,12 +222,6 @@ function EmailPiece({ onOpenForm }: { onOpenForm: () => void }) {
             gap: 12,
             cursor: 'pointer',
             transition: 'border-color 0.3s ease, background-color 0.3s ease',
-          }}
-          onMouseDown={(e) => {
-            e.currentTarget.style.background = 'var(--hair)'
-          }}
-          onMouseUp={(e) => {
-            e.currentTarget.style.background = 'var(--bg-elev)'
           }}
         >
           <span
@@ -274,7 +270,7 @@ function EmailPiece({ onOpenForm }: { onOpenForm: () => void }) {
               </>
             )}
           </span>
-        </button>
+        </motion.button>
         <span
           style={{
             fontFamily: 'var(--font-jetbrains), monospace',
@@ -328,13 +324,15 @@ function EmailPiece({ onOpenForm }: { onOpenForm: () => void }) {
   // Vista en PC: se mantiene intacta con escala tipográfica monumental y wipes
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <button
+      <motion.button
         type="button"
         onClick={copy}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
         onFocus={() => setHover(true)}
         onBlur={() => setHover(false)}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
         data-cursor-label={copied ? t.contact.copied : t.contact.copyHint}
         aria-label={`${t.contact.copyHint}: ${EMAIL}`}
         style={{
@@ -380,7 +378,7 @@ function EmailPiece({ onOpenForm }: { onOpenForm: () => void }) {
             {EMAIL}
           </span>
         </span>
-      </button>
+      </motion.button>
 
       {/* subrayado que se dibuja de izq. a der., al ritmo del relleno */}
       <span aria-hidden style={{ display: 'block', height: 2, background: HAIR, position: 'relative' }}>
@@ -634,10 +632,12 @@ function ContactFormModal({ isOpen, onClose }: ContactFormModalProps) {
             )}
 
             {/* Botón de cerrar */}
-            <button
+            <motion.button
               type="button"
               onClick={onClose}
               aria-label={t.contact.form.close}
+              whileHover={{ scale: 1.08, rotate: -5 }}
+              whileTap={{ scale: 0.95 }}
               style={{
                 position: 'absolute',
                 top: isMobile ? 20 : 24,
@@ -652,13 +652,13 @@ function ContactFormModal({ isOpen, onClose }: ContactFormModalProps) {
                 fontSize: 10,
                 letterSpacing: '0.1em',
                 zIndex: 2,
-                transition: 'color 0.3s ease',
+                transition: 'color 0.2s ease',
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = INK)}
               onMouseLeave={(e) => (e.currentTarget.style.color = FAINT)}
             >
               [ {t.contact.form.close.toUpperCase()} ]
-            </button>
+            </motion.button>
 
             {status === 'success' ? (
               <motion.div
@@ -705,9 +705,11 @@ function ContactFormModal({ isOpen, onClose }: ContactFormModalProps) {
                 >
                   {t.contact.form.success}
                 </p>
-                <button
+                <motion.button
                   type="button"
                   onClick={onClose}
+                  whileHover={{ scale: 1.05, color: INK, borderBottomColor: INK }}
+                  whileTap={{ scale: 0.95 }}
                   style={{
                     appearance: 'none',
                     border: 'none',
@@ -721,19 +723,11 @@ function ContactFormModal({ isOpen, onClose }: ContactFormModalProps) {
                     padding: '8px 16px',
                     borderBottom: '1px solid var(--hair)',
                     cursor: 'pointer',
-                    transition: 'color 0.3s ease, border-color 0.3s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = INK
-                    e.currentTarget.style.borderBottomColor = INK
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = MUTE
-                    e.currentTarget.style.borderBottomColor = 'var(--hair)'
+                    transition: 'color 0.25s ease, border-color 0.25s ease',
                   }}
                 >
                   {t.contact.form.close}
-                </button>
+                </motion.button>
               </motion.div>
             ) : (
               <motion.form
@@ -949,37 +943,11 @@ function ContactFormModal({ isOpen, onClose }: ContactFormModalProps) {
                   <button
                     type="submit"
                     disabled={status === 'submitting'}
-                    style={{
-                      appearance: 'none',
-                      border: 'none',
-                      background: 'var(--ink)',
-                      color: 'var(--bg)',
-                      padding: '16px 24px',
-                      borderRadius: 8,
-                      fontFamily: 'var(--font-jetbrains), monospace',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.12em',
-                      cursor: status === 'submitting' ? 'not-allowed' : 'pointer',
-                      transition: 'opacity 0.3s ease, transform 0.2s ease',
-                      width: '100%',
-                      textAlign: 'center',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (status !== 'submitting') e.currentTarget.style.opacity = '0.9'
-                    }}
-                    onMouseLeave={(e) => {
-                      if (status !== 'submitting') e.currentTarget.style.opacity = '1'
-                    }}
-                    onMouseDown={(e) => {
-                      if (status !== 'submitting') e.currentTarget.style.transform = 'scale(0.98)'
-                    }}
-                    onMouseUp={(e) => {
-                      if (status !== 'submitting') e.currentTarget.style.transform = 'scale(1)'
-                    }}
+                    className="btn-submit"
                   >
-                    {status === 'submitting' ? t.contact.form.sending : t.contact.form.submit}
+                    <span>
+                      {status === 'submitting' ? t.contact.form.sending : t.contact.form.submit}
+                    </span>
                   </button>
 
                   {status === 'error' && (

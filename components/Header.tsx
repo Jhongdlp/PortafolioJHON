@@ -26,6 +26,8 @@ const DIR_THRESHOLD = 6
 /** Conmutador ES/EN — un solo control con las dos opciones a la vista. */
 function LanguageSwitch() {
   const { locale, setLocale, t } = useLanguage()
+  const [hoveredLocale, setHoveredLocale] = useState<string | null>(null)
+
   return (
     <div
       role="group"
@@ -33,11 +35,13 @@ function LanguageSwitch() {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 2,
-        padding: 3,
+        gap: 1,
+        padding: '2.5px',
         borderRadius: 999,
         border: '1px solid var(--hair-strong)',
         fontFamily: 'var(--font-jetbrains), monospace',
+        position: 'relative',
+        background: 'rgb(var(--ink-rgb) / 0.02)',
       }}
     >
       {LOCALES.map((code: Locale) => {
@@ -47,22 +51,43 @@ function LanguageSwitch() {
             key={code}
             type="button"
             onClick={() => setLocale(code)}
+            onMouseEnter={() => setHoveredLocale(code)}
+            onMouseLeave={() => setHoveredLocale(null)}
             aria-pressed={active}
             style={{
               appearance: 'none',
               border: 'none',
               cursor: 'none',
-              padding: '5px 11px',
+              padding: '4px 10px',
               borderRadius: 999,
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: 700,
-              letterSpacing: '0.14em',
+              letterSpacing: '0.12em',
               textTransform: 'uppercase',
-              background: active ? INK : 'transparent',
-              color: active ? BG : 'rgb(var(--ink-rgb) / 0.55)',
-              transition: 'background 0.35s ease, color 0.35s ease',
+              position: 'relative',
+              background: 'transparent',
+              color: active 
+                ? BG 
+                : hoveredLocale === code 
+                  ? INK 
+                  : 'rgb(var(--ink-rgb) / 0.5)',
+              transition: 'color 0.25s ease',
+              zIndex: 1,
             }}
           >
+            {active && (
+              <motion.span
+                layoutId="active-locale-bg"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: INK,
+                  borderRadius: 999,
+                  zIndex: -1,
+                }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+            )}
             {code}
           </button>
         )
@@ -86,8 +111,10 @@ function ThemeSwitch() {
   const { t } = useLanguage()
 
   return (
-    <button
+    <motion.button
       type="button"
+      whileHover={{ scale: 1.08 }}
+      whileTap={{ scale: 0.92 }}
       // El tema nuevo se derrama desde el centro del propio botón: el gesto sale
       // de donde lo has pulsado, no de una esquina arbitraria.
       onClick={(e) => {
@@ -98,12 +125,13 @@ function ThemeSwitch() {
       // puede desincronizarse del icono durante la hidratación.
       aria-label={t.nav.theme}
       title={t.nav.theme}
+      className="theme-switch-btn"
       style={{
         appearance: 'none',
         display: 'grid',
         placeItems: 'center',
-        width: 34,
-        height: 34,
+        width: 30,
+        height: 30,
         borderRadius: 999,
         background: 'transparent',
         border: '1px solid var(--hair-strong)',
@@ -118,8 +146,8 @@ function ThemeSwitch() {
       {/* Sol: visible en oscuro, porque es a donde te lleva pulsar. */}
       <svg
         className="theme-icon-sun"
-        width="16"
-        height="16"
+        width="14"
+        height="14"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -133,8 +161,8 @@ function ThemeSwitch() {
       {/* Luna: visible en claro. */}
       <svg
         className="theme-icon-moon"
-        width="16"
-        height="16"
+        width="14"
+        height="14"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -145,7 +173,7 @@ function ThemeSwitch() {
       >
         <path d="M20.5 14.3A8.6 8.6 0 1 1 9.7 3.5a6.9 6.9 0 0 0 10.8 10.8Z" />
       </svg>
-    </button>
+    </motion.button>
   )
 }
 
@@ -153,6 +181,8 @@ export default function Header() {
   const [hidden, setHidden] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [open, setOpen] = useState(false)
+  const [hoveredNavIndex, setHoveredNavIndex] = useState<number | null>(null)
+  const [hamburgerHovered, setHamburgerHovered] = useState(false)
   const lastY = useRef(0)
   const { t } = useLanguage()
 
@@ -206,8 +236,8 @@ export default function Header() {
 
   const logo = (
     <svg
-      width="38"
-      height="31"
+      width="32"
+      height="26"
       viewBox="404 422 449 369"
       role="img"
       aria-label="JHONGDLP"
@@ -233,7 +263,9 @@ export default function Header() {
           left: 0,
           right: 0,
           zIndex: 60,
-          background: BG,
+          background: 'var(--bg-header, var(--bg))',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           borderBottom: open ? '1px solid transparent' : '1px solid var(--hair)',
           fontFamily: 'var(--font-archivo), sans-serif',
           color: INK,
@@ -244,17 +276,17 @@ export default function Header() {
             isMobile
               ? // En móvil los tres enlaces no caben en la barra (se partían en dos
                 // líneas): salen de aquí y se van al desplegable. Queda logo | idioma + menú.
-                { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px' }
-              : { display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', padding: '20px 34px' }
+                { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px' }
+              : { display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', padding: '12px 28px' }
           }
         >
           {!isMobile && (
             <div
               style={{
                 display: 'flex',
-                gap: 26,
-                fontSize: 12,
-                letterSpacing: '0.14em',
+                gap: 24,
+                fontSize: 11,
+                letterSpacing: '0.12em',
                 fontWeight: 500,
                 textTransform: 'uppercase',
               }}
@@ -263,13 +295,32 @@ export default function Header() {
                 <a
                   key={link}
                   href={NAV_HREFS[i]}
-                  // Sin acento, el hover se marca subiendo de tinta: el enlace en reposo
-                  // va a media luz y se enciende del todo bajo el puntero.
-                  style={{ cursor: 'none', textDecoration: 'none', transition: 'color 0.2s', color: MUTE }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = INK)}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = MUTE)}
+                  onMouseEnter={() => setHoveredNavIndex(i)}
+                  onMouseLeave={() => setHoveredNavIndex(null)}
+                  style={{
+                    position: 'relative',
+                    cursor: 'none',
+                    textDecoration: 'none',
+                    color: hoveredNavIndex === i ? INK : MUTE,
+                    transition: 'color 0.25s ease',
+                    padding: '6px 0',
+                  }}
                 >
                   {link}
+                  {hoveredNavIndex === i && (
+                    <motion.span
+                      layoutId="header-nav-underline"
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: 1.2,
+                        background: INK,
+                      }}
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    />
+                  )}
                 </a>
               ))}
             </div>
@@ -282,43 +333,55 @@ export default function Header() {
               display: 'flex',
               justifyContent: 'flex-end',
               alignItems: 'center',
-              gap: isMobile ? 14 : 22,
+              gap: isMobile ? 12 : 16,
             }}
           >
             <LanguageSwitch />
             <ThemeSwitch />
-            <button
-              type="button"
-              onClick={() => setOpen(o => !o)}
-              aria-label={t.nav.menu}
-              aria-expanded={open}
-              aria-controls="menu-movil"
-              style={{
-                appearance: 'none',
-                background: 'transparent',
-                border: 'none',
-                // 44px de zona táctil sobre 22px de trazo: el mínimo cómodo para el pulgar.
-                padding: 11,
-                margin: -11,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                gap: 5,
-                cursor: 'none',
-              }}
-            >
-              {/* Las dos barras giran en X: el mismo control abre y cierra. */}
-              <motion.span
-                animate={{ rotate: open ? 45 : 0, y: open ? 3.3 : 0 }}
-                transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-                style={{ width: 22, height: 1.6, background: INK, display: 'block' }}
-              />
-              <motion.span
-                animate={{ rotate: open ? -45 : 0, y: open ? -3.3 : 0 }}
-                transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-                style={{ width: 22, height: 1.6, background: INK, display: 'block' }}
-              />
-            </button>
+            {isMobile && (
+              <button
+                type="button"
+                onClick={() => setOpen(o => !o)}
+                onMouseEnter={() => setHamburgerHovered(true)}
+                onMouseLeave={() => setHamburgerHovered(false)}
+                aria-label={t.nav.menu}
+                aria-expanded={open}
+                aria-controls="menu-movil"
+                style={{
+                  appearance: 'none',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 11,
+                  margin: -11,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  justifyContent: 'center',
+                  gap: 5,
+                  cursor: 'none',
+                }}
+              >
+                {/* Las dos barras giran en X y alternan su tamaño en hover para una micro-animación genial */}
+                <motion.span
+                  animate={{
+                    rotate: open ? 45 : 0,
+                    y: open ? 3.3 : 0,
+                    width: open ? 20 : (hamburgerHovered ? 20 : 14),
+                  }}
+                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ height: 1.6, background: INK, display: 'block' }}
+                />
+                <motion.span
+                  animate={{
+                    rotate: open ? -45 : 0,
+                    y: open ? -3.3 : 0,
+                    width: open ? 20 : (hamburgerHovered ? 14 : 20),
+                  }}
+                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ height: 1.6, background: INK, display: 'block' }}
+                />
+              </button>
+            )}
           </div>
         </nav>
       </motion.header>

@@ -463,6 +463,7 @@ export default function Projects() {
           {/* Salida del carrusel: salta directo al contacto sin recorrer las cartas. */}
           <a
             href="#contacto"
+            className="link-with-arrow"
             style={{
               fontSize: 13,
               letterSpacing: '0.1em',
