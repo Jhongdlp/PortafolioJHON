@@ -20,7 +20,6 @@ export async function POST(request: Request) {
       console.log(`Mensaje:\n${message}`)
       console.log('👉 Configura RESEND_API_KEY en tu archivo .env.local para enviar emails reales.')
       
-      // Retornamos éxito en desarrollo para probar la animación y modal de la interfaz
       return NextResponse.json({
         success: true,
         mock: true,
@@ -35,8 +34,8 @@ export async function POST(request: Request) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: 'Portfolio Contact <onboarding@resend.dev>',
-        to: 'jhongdlp204@gmail.com',
+        from: 'Contacto Portafolio <contacto@jhongdlp.com>',
+        to: 'hello@jhongdlp.com',
         subject: `Nuevo mensaje de ${name} (Portafolio)`,
         html: `
           <div style="font-family: system-ui, sans-serif; padding: 30px; color: #16130F; background-color: #F2EFE6; border-radius: 8px; border: 1px solid #16130F;">
@@ -51,9 +50,12 @@ export async function POST(request: Request) {
     })
 
     if (!res.ok) {
-      const errorData = await res.json()
+      const errorData = await res.json().catch(() => ({}))
       console.error('Error from Resend API:', errorData)
-      return NextResponse.json({ error: 'Failed to send email.' }, { status: 500 })
+      return NextResponse.json(
+        { error: errorData.message || 'Failed to send email through Resend.' },
+        { status: res.status }
+      )
     }
 
     return NextResponse.json({ success: true })

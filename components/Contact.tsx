@@ -7,7 +7,7 @@ import { GRAIN } from '@/lib/grain'
 import { siGithub, siX } from 'simple-icons'
 
 // 👉 El texto traducible vive en lib/dictionaries.ts (bloque `contact`)
-const EMAIL = 'jhongdlp204@gmail.com'
+const EMAIL = 'hello@jhongdlp.com'
 const TIMEZONE = 'America/Guayaquil'
 
 // simple-icons retiró LinkedIn de su catálogo, así que su glifo se declara aquí.
@@ -164,6 +164,17 @@ function EmailPiece({ onOpenForm }: { onOpenForm: () => void }) {
   const [copied, setCopied] = useState(false)
   // En táctil no hay hover: el email se quedaría hueco para siempre. Ahí va relleno.
   const [canHover, setCanHover] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Detectar dispositivo móvil
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     setCanHover(window.matchMedia('(hover: hover)').matches)
@@ -187,6 +198,134 @@ function EmailPiece({ onOpenForm }: { onOpenForm: () => void }) {
     }
   }
 
+  // Vista en celular: caja interactiva muy limpia, tipografía clara en minúsculas y botón de copiar
+  if (isMobile) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+        <button
+          type="button"
+          onClick={copy}
+          style={{
+            appearance: 'none',
+            background: 'var(--bg-elev)',
+            border: '1px solid var(--hair-strong)',
+            borderRadius: '12px',
+            padding: '16px 20px',
+            margin: 0,
+            width: '100%',
+            textAlign: 'left',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            cursor: 'pointer',
+            transition: 'border-color 0.3s ease, background-color 0.3s ease',
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.background = 'var(--hair)'
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.background = 'var(--bg-elev)'
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--font-jetbrains), monospace',
+              fontSize: 'clamp(14px, 4.2vw, 16px)',
+              color: INK,
+              letterSpacing: '-0.02em',
+              textTransform: 'none',
+            }}
+          >
+            {EMAIL}
+          </span>
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              fontFamily: 'var(--font-jetbrains), monospace',
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: copied ? INK : FAINT,
+              transition: 'color 0.3s ease',
+            }}
+          >
+            {copied ? (
+              <span>{t.contact.copied} ✓</span>
+            ) : (
+              <>
+                <span>{t.contact.copyAction}</span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ marginLeft: 6, opacity: 0.7 }}
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </>
+            )}
+          </span>
+        </button>
+        <span
+          style={{
+            fontFamily: 'var(--font-jetbrains), monospace',
+            fontSize: 9,
+            letterSpacing: '0.05em',
+            color: FAINT,
+            textTransform: 'uppercase',
+            paddingLeft: 4,
+          }}
+        >
+          {copied ? '¡Copiado en el portapapeles!' : 'Toca el recuadro para copiar el correo'}
+        </span>
+
+        {/* Botón de mensaje directo animado (btn-12) */}
+        <div className="btn-12-wrapper" style={{ marginTop: 14, width: '100%' }}>
+          <button
+            type="button"
+            onClick={onOpenForm}
+            className="btn-12"
+            style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+          >
+            <span>
+              {t.contact.directMessageBtn}
+              <svg
+                width="15"
+                height="10"
+                viewBox="0 0 14 10"
+                fill="none"
+                style={{
+                  display: 'inline-block',
+                  verticalAlign: 'middle',
+                  marginLeft: 8,
+                  transform: 'translateY(-1px)',
+                }}
+              >
+                <path
+                  d="M1 5h12M9 1l4 4-4 4"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Vista en PC: se mantiene intacta con escala tipográfica monumental y wipes
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <button
@@ -304,6 +443,7 @@ function ContactFormModal({ isOpen, onClose }: ContactFormModalProps) {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState('')
   
   const [isNameFocused, setIsNameFocused] = useState(false)
   const [isEmailFocused, setIsEmailFocused] = useState(false)
@@ -329,6 +469,7 @@ function ContactFormModal({ isOpen, onClose }: ContactFormModalProps) {
         setEmail('')
         setMessage('')
         setStatus('idle')
+        setErrorMessage('')
       }, 300)
       return () => clearTimeout(timer)
     }
@@ -348,6 +489,7 @@ function ContactFormModal({ isOpen, onClose }: ContactFormModalProps) {
     e.preventDefault()
     if (status === 'submitting') return
     setStatus('submitting')
+    setErrorMessage('')
 
     try {
       const res = await fetch('/api/contact', {
@@ -360,10 +502,13 @@ function ContactFormModal({ isOpen, onClose }: ContactFormModalProps) {
       if (res.ok) {
         setStatus('success')
       } else {
+        const data = await res.json().catch(() => ({}))
         setStatus('error')
+        setErrorMessage(data.error || t.contact.form.error)
       }
     } catch {
       setStatus('error')
+      setErrorMessage(t.contact.form.error)
     }
   }
 
@@ -847,7 +992,7 @@ function ContactFormModal({ isOpen, onClose }: ContactFormModalProps) {
                         textAlign: 'center',
                       }}
                     >
-                      {t.contact.form.error}
+                      {errorMessage || t.contact.form.error}
                     </p>
                   )}
                 </motion.div>

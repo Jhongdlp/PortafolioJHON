@@ -192,11 +192,10 @@ html, body { margin: 0; padding: 0; background: var(--bg); }
      (dependen de dónde esté el botón y del tamaño de la ventana). Heredan del
      <html>, que es el padre de este pseudoárbol.
 
-     La curva es simétrica a propósito: una ease-out fuerte (expo) se comía casi
-     todo el radio en el primer cuarto del tiempo y luego se arrastraba, que es lo
-     que se leía como un salto. Ésta acelera y frena por igual, así que el círculo
-     mantiene un ritmo parejo de principio a fin. */
-  animation: theme-reveal 900ms cubic-bezier(0.45, 0.05, 0.25, 1) both;
+     Se usa una velocidad lineal constante para evitar que la animación parezca
+     detenerse o dar saltos al final, asegurando que el círculo crezca siempre a
+     la misma velocidad. */
+  animation: theme-reveal 700ms linear both;
 }
 
 @keyframes theme-reveal {
