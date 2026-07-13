@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import { useLanguage } from '@/lib/i18n'
 
 // El orden de la carrusela; la copia de cada proyecto vive en lib/dictionaries.ts
@@ -59,7 +59,7 @@ function makeDispMap(W: number, H: number, depth: number): string {
   out.width = W
   out.height = H
   const ox = out.getContext('2d')!
-  ox.filter = 'blur(7px)'
+  ox.filter = 'blur(4px)'
   ox.drawImage(base, 0, 0)
   return out.toDataURL()
 }
@@ -87,10 +87,15 @@ export default function Projects() {
   }, [])
 
   // El mapa de desplazamiento sólo alimenta al cristal de escritorio.
-  useEffect(() => {
-    if (isMobile) return
-    setDispMap(makeDispMap(CARD_W, CARD_H, 56))
+  // Memoizar para evitar recalcularlo cada render
+  const memoizedDispMap = useMemo(() => {
+    if (isMobile || typeof document === 'undefined') return ''
+    return makeDispMap(CARD_W, CARD_H, 36)
   }, [isMobile])
+
+  useEffect(() => {
+    setDispMap(memoizedDispMap)
+  }, [memoizedDispMap])
 
   // El carrusel no secuestra la rueda: la sección es un raíl alto con un escenario
   // `sticky` dentro. Mientras el escenario está clavado en el viewport, el scroll
@@ -164,14 +169,17 @@ export default function Projects() {
   const onSectionClick = useCallback((e: React.MouseEvent) => {
     if (dragged.current) return
     const target = e.target as HTMLElement
-    if (target.closest('a[href]')) return // el enlace sí lo recibió: que lo maneje él
+    if (target.closest('a[href]')) return
 
-    const card = document
-      .elementsFromPoint(e.clientX, e.clientY)
-      .map(el => el.closest('a[data-cursor-label]'))
-      .find(Boolean) as HTMLAnchorElement | undefined
-
-    if (card?.href) window.open(card.href, '_blank', 'noopener,noreferrer')
+    // Búsqueda más eficiente: parar en la primera coincidencia
+    const elements = document.elementsFromPoint(e.clientX, e.clientY)
+    for (let i = 0; i < elements.length; i++) {
+      const card = elements[i].closest('a[data-cursor-label]') as HTMLAnchorElement | null
+      if (card?.href) {
+        window.open(card.href, '_blank', 'noopener,noreferrer')
+        return
+      }
+    }
   }, [])
 
   const onMouseUp = useCallback(() => {
@@ -233,7 +241,7 @@ export default function Projects() {
               <feDisplacementMap
                 in="SourceGraphic"
                 in2="map"
-                scale="42"
+                scale="28"
                 xChannelSelector="R"
                 yChannelSelector="G"
               />
@@ -282,14 +290,14 @@ export default function Projects() {
               const off = (i - t) + 1
               const a = Math.abs(off)
               const pf = clamp(1 - a * 0.7, 0, 1)
-              const px = mx * 70 * pf
-              const py = my * 50 * pf
-              const tiltY = mx * 14 * pf
-              const tiltX = -my * 14 * pf
-              const opacity = clamp(1.12 - a * 0.95, 0, 1)
-              const infoOpacity = clamp(1 - a * 2, 0, 1)
-              const infoTx = mx * -38 * pf
-              const infoTy = my * -26 * pf
+              const px = Math.round(mx * 70 * pf)
+              const py = Math.round(my * 50 * pf)
+              const tiltY = Math.round((mx * 14 * pf) * 10) / 10
+              const tiltX = Math.round((-my * 14 * pf) * 10) / 10
+              const opacity = Math.round(clamp(1.12 - a * 0.95, 0, 1) * 100) / 100
+              const infoOpacity = Math.round(clamp(1 - a * 2, 0, 1) * 100) / 100
+              const infoTx = Math.round(mx * -38 * pf)
+              const infoTy = Math.round(my * -26 * pf)
 
               return (
                 <div
@@ -298,11 +306,12 @@ export default function Projects() {
                     position: 'absolute',
                     left: '50%',
                     top: '50%',
-                    transform: `translate(-50%,-50%) translate3d(${off * SPACING + 70 + px}px,${-24 + py}px,${-a * 240}px) rotateY(${off * -8 + tiltY}deg) rotateX(${tiltX}deg)`,
+                    transform: `translate(-50%,-50%) translate3d(${off * SPACING + 70 + px}px,${-24 + py}px,${-Math.round(a * 240)}px) rotateY(${(off * -8 + tiltY).toFixed(1)}deg) rotateX(${tiltX.toFixed(1)}deg)`,
                     opacity,
                     zIndex: Math.round(100 - a * 10),
                     transition: 'transform 0.22s ease-out, opacity 0.14s ease-out',
                     pointerEvents: a < 0.5 ? 'auto' : 'none',
+                    willChange: 'transform, opacity',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: CARD_GAP }}>
@@ -343,6 +352,8 @@ export default function Projects() {
                           src={image}
                           alt={p.title}
                           draggable={false}
+                          loading="lazy"
+                          decoding="async"
                           style={{
                             width: '100%',
                             height: '100%',

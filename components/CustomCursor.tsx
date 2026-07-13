@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-const TRAIL = 8
-const SIZES = [32, 32,30,  30 , 28, 28,  25,25, 22, 22, 19,19, 16,16, 12,12, 8,8 , 4 , 4,2,2]
-const LERPS = [0.22, 0.72, 0.69, 0.66, 0.63, 0.60, 0.58, 0.56, 0.54]
+const TRAIL = 5
+const SIZES = [32, 30, 28, 25, 22, 19]
+const LERPS = [0.22, 0.72, 0.69, 0.66, 0.63, 0.60]
 
 // Diámetro del círculo que reemplaza al cursor sobre un elemento con data-cursor-label.
 const BUBBLE = 124
@@ -44,6 +44,9 @@ export default function CustomCursor() {
       mouse.current = { x: e.clientX, y: e.clientY }
     }
 
+    let lastHitCheck = 0
+    const HIT_CHECK_INTERVAL = 120
+
     const tick = () => {
       const p = pos.current
       const m = mouse.current
@@ -59,31 +62,29 @@ export default function CustomCursor() {
       }
 
       dotsRef.current.forEach((dot, i) => {
-        if (dot) dot.style.transform = `translate(${p[i].x}px,${p[i].y}px)`
+        if (dot) dot.style.transform = `translate3d(${Math.round(p[i].x)}px,${Math.round(p[i].y)}px,0)`
       })
 
       // crosshair follows the raw mouse position for precision
       if (crossRef.current) {
-        crossRef.current.style.transform = `translate(${m.x}px,${m.y}px)`
+        crossRef.current.style.transform = `translate3d(${m.x}px,${m.y}px,0)`
       }
 
-      // Cualquier elemento con data-cursor-label expande el cursor y muestra su texto.
-      // Se resuelve por frame, no con mouseover, porque las cartas se desplazan con el
-      // parallax bajo un ratón quieto y el navegador no reevalúa el hover sin movimiento.
-      // elementsFromPoint (plural) y no elementFromPoint: dentro de un subárbol
-      // preserve-3d, el singular devuelve el contenedor en vez de la carta.
-      const hit = document
-        .elementsFromPoint(m.x, m.y)
-        .find(el => el.closest('[data-cursor-label]'))
-      const next = hit?.closest('[data-cursor-label]')?.getAttribute('data-cursor-label') ?? null
-      if (next !== labelRef.current) {
-        labelRef.current = next
-        target.current = next ? 1 : 0
-        // Al entrar el texto se pone ya; al salir se mantiene hasta que la burbuja
-        // termina de encogerse, para que no desaparezca de golpe.
-        if (next) {
-          shownRef.current = next
-          setLabel(next)
+      // Throttle elementsFromPoint check to reduce CPU load
+      const now = performance.now()
+      if (now - lastHitCheck > HIT_CHECK_INTERVAL) {
+        lastHitCheck = now
+        const hit = document
+          .elementsFromPoint(m.x, m.y)
+          .find(el => el.closest('[data-cursor-label]'))
+        const next = hit?.closest('[data-cursor-label]')?.getAttribute('data-cursor-label') ?? null
+        if (next !== labelRef.current) {
+          labelRef.current = next
+          target.current = next ? 1 : 0
+          if (next) {
+            shownRef.current = next
+            setLabel(next)
+          }
         }
       }
 
@@ -94,13 +95,15 @@ export default function CustomCursor() {
 
       if (bubbleRef.current && bubbleInner.current) {
         // la burbuja sigue a la cabeza del rastro, no al ratón crudo
-        bubbleRef.current.style.transform = `translate(${p[0].x}px,${p[0].y}px)`
-        bubbleInner.current.style.transform = `scale(${(MIN_SCALE + (1 - MIN_SCALE) * g).toFixed(4)})`
-        bubbleInner.current.style.opacity = g.toFixed(3)
+        bubbleRef.current.style.transform = `translate3d(${Math.round(p[0].x)}px,${Math.round(p[0].y)}px,0)`
+        const scale = MIN_SCALE + (1 - MIN_SCALE) * g
+        bubbleInner.current.style.transform = `scale(${scale.toFixed(2)})`
+        bubbleInner.current.style.opacity = g.toFixed(2)
       }
       // el rastro se apaga a la vez que la burbuja se abre
-      if (dotsLayer.current) dotsLayer.current.style.opacity = (1 - g).toFixed(3)
-      if (crossRef.current) crossRef.current.style.opacity = (1 - g).toFixed(3)
+      const opacity = (1 - g).toFixed(2)
+      if (dotsLayer.current) dotsLayer.current.style.opacity = opacity
+      if (crossRef.current) crossRef.current.style.opacity = opacity
 
       if (g < 0.01 && !target.current && shownRef.current !== null) {
         shownRef.current = null
