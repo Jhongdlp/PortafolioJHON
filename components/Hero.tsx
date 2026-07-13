@@ -4,9 +4,11 @@ import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { useLanguage } from '@/lib/i18n'
 import { GRAIN } from '@/lib/grain'
+import { useTheme } from '@/lib/theme'
 
 export default function Hero() {
   const { t } = useLanguage()
+  const { theme } = useTheme()
 
   return (
     <section
@@ -81,7 +83,7 @@ export default function Hero() {
           }}
         >
           <Image
-            src="/portrait-v4.png"
+            src={theme === 'light' ? '/portrait-whitemode.png' : '/portrait-v4.png'}
             alt={t.hero.portraitAlt}
             fill
             priority
