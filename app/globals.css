@@ -337,9 +337,9 @@ html { scroll-behavior: smooth; }
 .btn-12 {
   -webkit-tap-highlight-color: transparent;
   -webkit-appearance: button;
-  background-color: var(--bg);
+  background-color: #fff;
   color: #fff; /* Fijo en blanco para que la mezcla por diferencia actúe según el fondo */
-  border: 2px solid var(--hair-strong);
+  border: 2px solid #fff;
   border-radius: 99rem;
   overflow: hidden;
   padding: 0.8rem 3rem;
@@ -388,11 +388,11 @@ html { scroll-behavior: smooth; }
 .btn-12:before {
   background: linear-gradient(
     90deg,
-    var(--ink) 25%,
+    #000 25%,
     transparent 0,
     transparent 50%,
-    var(--ink) 0,
-    var(--ink) 75%,
+    #000 0,
+    #000 75%,
     transparent 0
   );
 }
@@ -403,20 +403,23 @@ html { scroll-behavior: smooth; }
     90deg,
     transparent 0,
     transparent 25%,
-    var(--ink) 0,
-    var(--ink) 50%,
+    #000 0,
+    #000 50%,
     transparent 0,
     transparent 75%,
-    var(--ink) 0
+    #000 0
   );
 }
 
-.btn-12:hover {
-  border-color: var(--ink);
+.btn-12:hover,
+.btn-12:active {
+  border-color: #000;
 }
 
 .btn-12:hover:after,
-.btn-12:hover:before {
+.btn-12:hover:before,
+.btn-12:active:after,
+.btn-12:active:before {
   --progress: 0;
 }
 
@@ -424,42 +427,5 @@ html { scroll-behavior: smooth; }
   .btn-12 {
     padding: 0.8rem 1.6rem;
     font-size: 10px;
-    background-color: #fff;
-    border-color: #fff;
-  }
-
-  .btn-12:before {
-    background: linear-gradient(
-      90deg,
-      #000 25%,
-      transparent 0,
-      transparent 50%,
-      #000 0,
-      #000 75%,
-      transparent 0
-    );
-  }
-
-  .btn-12:after {
-    background: linear-gradient(
-      90deg,
-      transparent 0,
-      transparent 25%,
-      #000 0,
-      #000 50%,
-      transparent 0,
-      transparent 75%,
-      #000 0
-    );
-  }
-
-  .btn-12:hover,
-  .btn-12:active {
-    border-color: #000;
-  }
-
-  .btn-12:active:after,
-  .btn-12:active:before {
-    --progress: 0;
   }
 }
