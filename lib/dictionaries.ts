@@ -86,7 +86,7 @@ const dictionaries = {
         local: 'Hora local',
         elsewhere: 'En otros sitios',
       },
-      directMessageBtn: 'o envíame un mensaje directo',
+      directMessageBtn: 'envíame un mensaje',
       form: {
         title: 'Enviar un mensaje',
         name: 'Nombre',
@@ -217,7 +217,7 @@ const dictionaries = {
         local: 'Local time',
         elsewhere: 'Elsewhere',
       },
-      directMessageBtn: 'or send me a direct message',
+      directMessageBtn: 'send me a message',
       form: {
         title: 'Send a message',
         name: 'Name',

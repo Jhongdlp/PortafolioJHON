@@ -419,3 +419,47 @@ html { scroll-behavior: smooth; }
 .btn-12:hover:before {
   --progress: 0;
 }
+
+@media (max-width: 768px) {
+  .btn-12 {
+    padding: 0.8rem 1.6rem;
+    font-size: 10px;
+    background-color: #fff;
+    border-color: #fff;
+  }
+
+  .btn-12:before {
+    background: linear-gradient(
+      90deg,
+      #000 25%,
+      transparent 0,
+      transparent 50%,
+      #000 0,
+      #000 75%,
+      transparent 0
+    );
+  }
+
+  .btn-12:after {
+    background: linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 25%,
+      #000 0,
+      #000 50%,
+      transparent 0,
+      transparent 75%,
+      #000 0
+    );
+  }
+
+  .btn-12:hover,
+  .btn-12:active {
+    border-color: #000;
+  }
+
+  .btn-12:active:after,
+  .btn-12:active:before {
+    --progress: 0;
+  }
+}
