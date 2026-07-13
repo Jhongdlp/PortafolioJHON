@@ -2,80 +2,38 @@
 
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-
-const navLinks = ['Work', 'About', 'Contact']
+import { useLanguage } from '@/lib/i18n'
+import { GRAIN } from '@/lib/grain'
 
 export default function Hero() {
+  const { t } = useLanguage()
+
   return (
     <section
       style={{
-        background: '#0f0f0f',
+        // mismo fondo que la sección About (bruma radial cálida sobre el fondo base)
+        background: 'radial-gradient(135% 105% at 12% -8%, var(--bg-elev) 0%, var(--bg) 60%)',
+        position: 'relative',
+        overflow: 'hidden',
         minHeight: '100vh',
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
+        // deja sitio al header fijo que vive fuera de esta sección
+        paddingTop: 65,
         fontFamily: 'var(--font-archivo), sans-serif',
-        color: '#E9E4D6',
+        color: 'var(--ink)',
       }}
     >
-      {/* NAV */}
-      <motion.nav
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
+      {/* grano */}
+      <div
+        aria-hidden
+        className="grain"
         style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto 1fr',
-          alignItems: 'center',
-          padding: '20px 34px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          backgroundImage: GRAIN,
+          zIndex: 1,
         }}
-      >
-        {/* Left links */}
-        <div style={{ display: 'flex', gap: 26, fontSize: 12, letterSpacing: '0.14em', fontWeight: 500, textTransform: 'uppercase' }}>
-          {navLinks.map((link) => (
-            <span
-              key={link}
-              style={{ cursor: 'pointer', transition: 'color 0.2s', color: '#E9E4D6' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#F26321')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#E9E4D6')}
-            >
-              {link}
-            </span>
-          ))}
-        </div>
-
-        {/* Center logo */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width="32" height="24" viewBox="0 0 30 22" fill="none" aria-label="logo">
-            <path
-              d="M3 11 C3 4, 11 4, 11 11 C11 18, 19 18, 19 11 C19 4, 27 4, 27 11"
-              stroke="#F26321"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-
-        {/* Right icons */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 22 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ cursor: 'pointer' }}>
-            <path
-              d="M3 5h2l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.4a1.5 1.5 0 0 0 1.5-1.2L21 8H6"
-              stroke="#E9E4D6"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <circle cx="9.5" cy="20" r="1.1" fill="#E9E4D6" />
-            <circle cx="18" cy="20" r="1.1" fill="#E9E4D6" />
-          </svg>
-          <span style={{ display: 'flex', flexDirection: 'column', gap: 5, cursor: 'pointer' }}>
-            <span style={{ width: 22, height: 1.6, background: '#E9E4D6', display: 'block' }} />
-            <span style={{ width: 22, height: 1.6, background: '#E9E4D6', display: 'block' }} />
-          </span>
-        </div>
-      </motion.nav>
+      />
 
       {/* MASSIVE HEADLINE */}
       <div style={{ padding: '30px 30px 0', overflow: 'hidden' }}>
@@ -86,7 +44,7 @@ export default function Hero() {
           style={{
             fontFamily: 'var(--font-anton), sans-serif',
             fontWeight: 400,
-            color: '#E9E4D6',
+            color: 'var(--ink)',
             fontSize: 'clamp(80px, 17vw, 260px)',
             lineHeight: 0.86,
             letterSpacing: '0.01em',
@@ -124,7 +82,7 @@ export default function Hero() {
         >
           <Image
             src="/portrait-v4.png"
-            alt="JHONGDLP portrait"
+            alt={t.hero.portraitAlt}
             fill
             priority
             style={{ objectFit: 'cover', objectPosition: 'center top' }}

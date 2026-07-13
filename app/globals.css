@@ -1,17 +1,422 @@
 @import "tailwindcss";
 
-*, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; cursor: none; }
-*, *:hover { cursor: none !important; }
+/* ─────────────────────────────────────────────────────────────────────────────
+   TEMA. Única fuente de verdad del color: los componentes ya no llevan hex, sus
+   constantes locales (INK, BG, MUTE…) apuntan aquí con var().
 
-::selection {
-  background: #F26321;
-  color: #0a0a0a;
+   El tema por defecto es el oscuro y se sirve así desde el servidor (data-theme
+   en <html>, ver layout.tsx). El claro sólo entra si el visitante lo pide.
+
+   Las alfas NO son simétricas entre temas, y es deliberado: tinta clara sobre
+   carbón "gana" luminancia al mezclarse, mientras que tinta oscura sobre papel la
+   pierde. Copiar los mismos 0.5 / 0.34 / 0.13 al claro deja los textos
+   secundarios lavados y las líneas invisibles. Cada alfa del claro está subida
+   hasta igualar el CONTRASTE percibido del oscuro, no su número:
+     mute  → 4.5:1 en ambos temas    faint → 2.7:1 en ambos temas
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Le dice al navegador de qué color pintar scrollbars, autocompletado y
+     controles nativos. Sin esto, un scrollbar blanco delata el modo. */
+  color-scheme: dark;
+
+  --ink-rgb: 233 228 214;
+
+  --bg: #1a1a1a;             /* carbón cálido, fondo de todas las secciones */
+  --bg-elev: #242424;        /* bruma radial de Hero/About */
+  --bg-deep: #0d0d0d;        /* telón del Preloader: más hondo que el fondo */
+  --ink: #E9E4D6;            /* hueso, texto principal */
+  --ink-soft: #f2f0ea;       /* tinta del Preloader */
+
+  --mute: rgb(var(--ink-rgb) / 0.5);
+  --mute-strong: rgb(var(--ink-rgb) / 0.62);   /* enlaces del header en reposo */
+  --faint: rgb(var(--ink-rgb) / 0.34);
+  --hair: rgb(var(--ink-rgb) / 0.13);          /* filetes de 1px */
+  --hair-strong: rgb(var(--ink-rgb) / 0.16);
+
+  --logo: #F26321;           /* naranja de marca: sólo el logo */
+
+  /* Grano de película. En oscuro va en `overlay`, que ilumina el carbón sin
+     ensuciarlo. */
+  --grain-blend: overlay;
+  --grain-opacity: 0.05;
+
+  /* Cristal líquido de las cartas de Projects. Sobre carbón, el volumen se
+     construye con reflejos blancos y sombras negras profundas. */
+  --glass-bg: rgba(255,255,255,0.05);
+  --glass-border: rgba(255,255,255,0.10);
+  --glass-border-strong: rgba(255,255,255,0.16);
+  --glass-brightness: 1.1;
+  --glass-shadow: 0 50px 120px rgba(0,0,0,0.5);
+  --glass-shadow-sm: 0 24px 60px rgba(0,0,0,0.45);
+  --glass-shadow-media: 0 18px 40px rgba(0,0,0,0.45);
+  --glass-spec: linear-gradient(150deg,rgba(255,255,255,0.85),rgba(255,255,255,0.10) 28%,rgba(255,255,255,0) 50%,rgba(255,255,255,0.12) 74%,rgba(255,255,255,0.55));
+  --glass-inner: inset 0 1px 1px rgba(255,255,255,0.5), inset 0 -1px 2px rgba(255,255,255,0.25), inset 0 0 22px rgba(255,255,255,0.06);
+  --glass-sheen: linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0));
+
+  /* Texto e hilos DENTRO de la carta de cristal: grises neutros, no el hueso
+     cálido de la página, porque la carta es vidrio y no papel. */
+  --card-ink: #eaeaea;
+  --card-sub: #c2c2c2;
+  --card-loc: #9c9c9c;
+  --card-desc: #8f8f8f;
+  --card-faint: #828282;
+  --card-rule: #3a3a3a;
+  --dot-idle: #3a3a3a;
+  --dot-past: #666;
+
+  --chip-shadow: 0 18px 46px rgba(0,0,0,0.45);   /* etiqueta del cursor */
 }
 
-.projects-section ::selection {
-  background: #e10600;
-  color: #fff;
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --ink-rgb: 22 19 15;
+
+  --bg: #F2EFE6;             /* hueso: el negativo del carbón, misma temperatura */
+  --bg-elev: #FBF9F3;
+  --bg-deep: #EDE9DE;
+  --ink: #16130F;            /* la tinta que el sitio ya usaba en ::selection */
+  --ink-soft: #16130F;
+
+  --mute: rgb(var(--ink-rgb) / 0.62);
+  --mute-strong: rgb(var(--ink-rgb) / 0.74);
+  --faint: rgb(var(--ink-rgb) / 0.45);
+  --hair: rgb(var(--ink-rgb) / 0.14);
+  --hair-strong: rgb(var(--ink-rgb) / 0.18);
+
+  /* El #F26321 sobre papel se queda en 2.9:1 y vibra. Un punto más profundo
+     mantiene la marca y llega a contraste de texto. */
+  --logo: #D9531A;
+
+  /* `overlay` sobre papel revienta el blanco y deja el grano sucio: en claro el
+     grano tiene que RESTAR luz, y eso es `multiply`, con menos peso porque sobre
+     fondo claro el ruido se ve mucho antes. */
+  --grain-blend: multiply;
+  --grain-opacity: 0.032;
+
+  /* El cristal se invierte: deja de ser un reflejo blanco sobre negro y pasa a
+     ser vidrio esmerilado sobre papel. Los bordes ahora son tinta (un borde
+     blanco sobre papel no existe) y la sombra es cálida y difusa, nunca negra:
+     el negro puro sobre papel se lee como suciedad, no como profundidad. */
+  --glass-bg: rgba(255,255,255,0.5);
+  --glass-border: rgba(22,19,15,0.10);
+  --glass-border-strong: rgba(22,19,15,0.14);
+  --glass-brightness: 1.02;   /* 1.1 sobre papel quema el blanco */
+  --glass-shadow: 0 50px 120px rgba(22,19,15,0.16);
+  --glass-shadow-sm: 0 24px 60px rgba(22,19,15,0.13);
+  --glass-shadow-media: 0 18px 40px rgba(22,19,15,0.14);
+  --glass-spec: linear-gradient(150deg,rgba(255,255,255,0.95),rgba(255,255,255,0.3) 28%,rgba(22,19,15,0.05) 50%,rgba(255,255,255,0.35) 74%,rgba(255,255,255,0.9));
+  --glass-inner: inset 0 1px 1px rgba(255,255,255,0.9), inset 0 -1px 2px rgba(22,19,15,0.05), inset 0 0 22px rgba(255,255,255,0.35);
+  --glass-sheen: linear-gradient(180deg,rgba(255,255,255,0.35),rgba(255,255,255,0));
+
+  --card-ink: #16130F;
+  --card-sub: #45403a;
+  --card-loc: #5c574f;
+  --card-desc: #6b665e;
+  --card-faint: #6b665e;
+  --card-rule: rgba(22,19,15,0.2);
+  --dot-idle: rgba(22,19,15,0.18);
+  --dot-past: rgba(22,19,15,0.42);
+
+  --chip-shadow: 0 18px 46px rgba(22,19,15,0.22);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); }
+
+/* El cambio de tema se acompaña sólo mientras dura: la clase la pone y la quita
+   el proveedor (lib/theme.tsx). Dejar estas transiciones puestas de forma
+   permanente volvería pastosos los hovers de toda la página, y animar `all`
+   pisaría los transforms que conduce Framer Motion. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: background-color 0.34s ease, background-image 0.34s ease,
+              color 0.34s ease, border-color 0.34s ease, box-shadow 0.34s ease,
+              fill 0.34s ease !important;
+  transition-delay: 0s !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-switching,
+  .theme-switching *,
+  .theme-switching *::before,
+  .theme-switching *::after { transition: none !important; }
+}
+
+/* Ocultar el puntero sólo donde CustomCursor lo reemplaza: en táctil no se
+   monta, y sin este límite un híbrido (tablet con ratón) se queda sin puntero. */
+@media (hover: hover) and (pointer: fine) {
+  html, body { cursor: none; }
+  *, *:hover { cursor: none !important; }
+
+  /* Restaurar cursor nativo en modales para facilitar la interacción y escritura */
+  html.modal-open,
+  html.modal-open body,
+  html.modal-open * {
+    cursor: auto !important;
+  }
+  html.modal-open .custom-cursor-dots,
+  html.modal-open .custom-cursor-cross,
+  html.modal-open .custom-cursor-bubble {
+    display: none !important;
+  }
+}
+
+/* Una sola selección para toda la página: al caer los acentos de color, las reglas
+   por sección (naranja global, rojo en projects) dejaron de decir nada distinto. */
+::selection {
+  background: var(--ink);
+  color: var(--bg);
 }
 
 .cursor-none { cursor: none; }
+
+/* ── Revelación circular del cambio de tema (View Transitions) ────────────────
+   El navegador apila dos fotos de la página: la vieja debajo, la nueva encima.
+   Por defecto las funde entre sí, y ese fundido hay que APAGARLO: si no, se suma
+   al recorte circular y el círculo entra medio transparente, como una mancha.
+   El clip-path que hace crecer el círculo lo aplica lib/theme.tsx sobre la capa
+   nueva; aquí sólo se prepara el escenario. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  mix-blend-mode: normal;
+}
+
+/* El tema viejo se queda quieto y entero debajo; el nuevo se derrama por encima. */
+::view-transition-old(root) { animation: none; z-index: 1; }
+::view-transition-new(root) {
+  z-index: 2;
+  /* El centro y el radio del círculo los deja puestos lib/theme.tsx al pulsar
+     (dependen de dónde esté el botón y del tamaño de la ventana). Heredan del
+     <html>, que es el padre de este pseudoárbol.
+
+     La curva es simétrica a propósito: una ease-out fuerte (expo) se comía casi
+     todo el radio en el primer cuarto del tiempo y luego se arrastraba, que es lo
+     que se leía como un salto. Ésta acelera y frena por igual, así que el círculo
+     mantiene un ritmo parejo de principio a fin. */
+  animation: theme-reveal 900ms cubic-bezier(0.45, 0.05, 0.25, 1) both;
+}
+
+@keyframes theme-reveal {
+  from { clip-path: circle(0px at var(--reveal-x) var(--reveal-y)); }
+  to   { clip-path: circle(var(--reveal-r) at var(--reveal-x) var(--reveal-y)); }
+}
+
+/* Conmutador de tema (Header). Los dos iconos existen siempre en el DOM y aquí
+   se decide cuál se ve: así el botón ya sale bien en el primer pintado, sin
+   esperar a que React hidrate. Cada tema muestra el icono del OTRO, que es a
+   donde te lleva pulsarlo. */
+.theme-icon-moon { display: none; }
+:root[data-theme="light"] .theme-icon-sun { display: none; }
+:root[data-theme="light"] .theme-icon-moon { display: block; }
+
+/* Grano de película (Hero, About, Quotes, Contact, Footer). La imagen sigue
+   viniendo inline desde lib/grain.ts; aquí van sólo mezcla y peso, porque ambos
+   dependen del tema y `mix-blend-mode` no admite var() desde el style inline. */
+.grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
+}
+
+/* About — grid inferior. Vive aquí y no inline porque necesita breakpoint:
+   en móvil colapsa a una columna y la ficha técnica (meta + stack) pasa
+   por debajo de la bio, para no enterrarla tras el muro de iconos. */
+.about-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 1.6fr);
+  gap: clamp(28px, 5vw, 80px);
+}
+
+.about-grid > .about-meta { order: 1; }
+.about-grid > .about-body { order: 2; }
+
+@media (max-width: 900px) {
+  .about-grid {
+    grid-template-columns: 1fr;
+    gap: 56px;
+  }
+  .about-grid > .about-meta { order: 2; }
+  .about-grid > .about-body { order: 1; }
+}
+
+/* Contact — pie de sección. Bio + ficha mono a la izquierda, redes a la derecha;
+   en móvil se apila y las redes quedan al final, tras los datos de contacto. */
+.contact-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(240px, 1fr);
+  gap: clamp(32px, 5vw, 80px);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+}
+
+/* Quotes — pie de la cita. Autoría a la izquierda y el resto de rostros a la derecha,
+   empujados a los extremos; en móvil se apila y la fila de retratos pasa debajo, donde
+   sigue leyéndose como "hay más voces" sin robarle ancho al nombre. */
+.quotes-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(24px, 4vw, 56px);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 700px) {
+  .quotes-foot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 28px;
+  }
+}
+
+/* About cierra con clamp(96px,15vh,168px) de aire inferior: en escritorio respira,
+   pero en móvil deja un pozo negro entre los iconos y el titular de Projects.
+   El !important es obligado: About declara el padding inline y eso gana a la clase. */
+@media (max-width: 900px) {
+  .editorial-section { padding-bottom: 56px !important; }
+}
+
+/* Projects — carril móvil. El carrusel 3D de escritorio secuestra la rueda y el
+   arrastre; en táctil eso pelea contra el scroll vertical de la página. Debajo de
+   900px se cambia por scroll nativo con snap: cada carta ocupa 84vw para que asome
+   la siguiente y se entienda que hay más. */
+.projects-rail {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scroll-padding-left: 20px;
+  padding: 4px 20px 8px;
+  scrollbar-width: none;
+}
+
+.projects-rail::-webkit-scrollbar { display: none; }
+
+.projects-rail > * {
+  flex: 0 0 84vw;
+  max-width: 420px;
+  scroll-snap-align: start;
+}
+
+/* Los enlaces del header saltan entre secciones; sin esto el brinco es seco. */
+html { scroll-behavior: smooth; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* Pulso del indicador "en vivo" del reloj local (About.tsx y Contact.tsx) */
+@keyframes aboutPulse {
+  0%   { box-shadow: 0 0 0 0 rgb(var(--ink-rgb) / 0.55); }
+  70%  { box-shadow: 0 0 0 7px rgb(var(--ink-rgb) / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(var(--ink-rgb) / 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes aboutPulse { from, to { box-shadow: none; } }
+}
+
+/* ── Botón Mensaje Directo Animado (btn-12) ── */
+.btn-12-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 20px;
+}
+
+.btn-12 {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: button;
+  background-color: var(--bg);
+  color: #fff; /* Fijo en blanco para que la mezcla por diferencia actúe según el fondo */
+  border: 2px solid var(--hair-strong);
+  border-radius: 99rem;
+  overflow: hidden;
+  padding: 0.8rem 3rem;
+  position: relative;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: none;
+  transition: border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-12:disabled {
+  cursor: default;
+}
+
+.btn-12 svg {
+  display: block;
+  vertical-align: middle;
+}
+
+.btn-12 [hidden] {
+  display: none;
+}
+
+.btn-12 span {
+  position: relative;
+  z-index: 2;
+  mix-blend-mode: difference;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-12:after,
+.btn-12:before {
+  content: "";
+  inset: 0;
+  position: absolute;
+  transform: translateY(var(--progress, 100%));
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1;
+}
+
+.btn-12:before {
+  background: linear-gradient(
+    90deg,
+    var(--ink) 25%,
+    transparent 0,
+    transparent 50%,
+    var(--ink) 0,
+    var(--ink) 75%,
+    transparent 0
+  );
+}
+
+.btn-12:after {
+  --progress: -100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 25%,
+    var(--ink) 0,
+    var(--ink) 50%,
+    transparent 0,
+    transparent 75%,
+    var(--ink) 0
+  );
+}
+
+.btn-12:hover {
+  border-color: var(--ink);
+}
+
+.btn-12:hover:after,
+.btn-12:hover:before {
+  --progress: 0;
+}
