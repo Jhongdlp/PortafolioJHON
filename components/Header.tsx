@@ -1,6 +1,8 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { useLanguage } from '@/lib/i18n'
 import { useTheme } from '@/lib/theme'
@@ -15,7 +17,9 @@ const BG = 'var(--bg)'
 // (Sobre papel el naranja se profundiza para no quedarse en 2.9:1 — ver --logo.)
 const LOGO = 'var(--logo)'
 
-// Destinos de t.nav.links, en el mismo orden (ver lib/dictionaries.ts).
+// Destinos de t.nav.links, en el mismo orden (ver lib/dictionaries.ts). Son
+// anclas de la portada: fuera de ella (p. ej. /raccoony) hay que prefijarlas con
+// «/» o el navegador las busca en la página actual y no encuentra nada.
 const NAV_HREFS = ['#proyectos', '#sobre-mi', '#contacto']
 
 // A partir de aquí puede esconderse al bajar
@@ -185,6 +189,8 @@ export default function Header() {
   const [hamburgerHovered, setHamburgerHovered] = useState(false)
   const lastY = useRef(0)
   const { t } = useLanguage()
+  const onHome = usePathname() === '/'
+  const hrefFor = (hash: string) => (onHome ? hash : `/${hash}`)
 
   // Mismo corte que el resto del sitio (ver globals.css).
   useEffect(() => {
@@ -202,8 +208,10 @@ export default function Header() {
 
   useEffect(() => {
     lastY.current = window.scrollY
+    let frame = 0
 
-    const onScroll = () => {
+    const read = () => {
+      frame = 0
       const y = window.scrollY
       const dy = y - lastY.current
 
@@ -216,9 +224,18 @@ export default function Header() {
       if (y <= HIDE_AFTER) setHidden(false)
     }
 
-    onScroll()
+    // Una lectura por frame como mucho: el scroll dispara muchos más eventos que
+    // fotogramas y la barra no puede cambiar de sitio más de una vez por frame.
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(read)
+    }
+
+    read()
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    return () => {
+      if (frame) cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+    }
   }, [])
 
   // Con el menú abierto: nada de scroll detrás, y Escape cierra.
@@ -294,7 +311,7 @@ export default function Header() {
               {t.nav.links.map((link, i) => (
                 <a
                   key={link}
-                  href={NAV_HREFS[i]}
+                  href={hrefFor(NAV_HREFS[i])}
                   onMouseEnter={() => setHoveredNavIndex(i)}
                   onMouseLeave={() => setHoveredNavIndex(null)}
                   style={{
@@ -326,7 +343,28 @@ export default function Header() {
             </div>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{logo}</div>
+          {/* El logo es la vuelta al inicio. Dentro de la portada no se navega: sería
+              recargar la misma ruta, así que sube al hero por el ancla y de paso cierra
+              el menú si estaba abierto. Fuera de ella sí va a «/» con el router. */}
+          <Link
+            href="/"
+            aria-label={t.nav.home}
+            onClick={(e) => {
+              if (!onHome) return
+              e.preventDefault()
+              setOpen(false)
+              document.querySelector('#inicio')?.scrollIntoView({ block: 'start' })
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'none',
+              textDecoration: 'none',
+            }}
+          >
+            {logo}
+          </Link>
 
           <div
             style={{
@@ -409,10 +447,13 @@ export default function Header() {
             {t.nav.links.map((link, i) => (
               <motion.a
                 key={link}
-                href={NAV_HREFS[i]}
+                href={hrefFor(NAV_HREFS[i])}
                 // El salto de ancla nativo ocurriría con el body aún bloqueado y se
                 // perdería: primero se cierra el menú, y ya sin bloqueo se navega.
+                // Fuera de la portada no hay nada a lo que saltar en esta página: se
+                // deja pasar la navegación real hacia «/#ancla».
                 onClick={(e) => {
+                  if (!onHome) return
                   e.preventDefault()
                   setOpen(false)
                   const target = document.querySelector(NAV_HREFS[i])

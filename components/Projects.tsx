@@ -1,6 +1,7 @@
 'use client'
 
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useRef, useState, useCallback, useEffect, memo } from 'react'
 import { useLanguage } from '@/lib/i18n'
 
 // El orden de la carrusela; la copia de cada proyecto vive en lib/dictionaries.ts
@@ -8,9 +9,16 @@ const PROJECTS = [
   { codename: 'BIZZIO', image: '/projects/bizzio.webp', url: 'https://bizzio.shop/', host: 'bizzio.shop' },
   { codename: 'UTITECH', image: '/projects/indoamerica.webp', url: 'https://indoamericatech.com/laboratorios-de-ia', host: 'indoamericatech.com' },
   { codename: 'INSIDEEBB', image: '/projects/insideeb.webp', url: 'https://insideebb.com/en', host: 'insideebb.com' },
+  { codename: 'KAMMEL', image: '/projects/kammel.png', url: 'https://kammel-ssh.vercel.app/', host: 'kammel-ssh.vercel.app' },
+  // Raccoony no tiene web: su carta lleva al caso de estudio de este mismo sitio.
+  { codename: 'RACCOONY', image: '/raccoony/cover.webp', url: '/raccoony', host: '/raccoony' },
 ] as const
 
 type Codename = (typeof PROJECTS)[number]['codename']
+
+// Una carta apunta hacia dentro del sitio cuando su URL es una ruta y no un
+// origen. No hace falta marcarlas: el propio enlace ya lo dice.
+const isInternal = (url: string) => url.startsWith('/')
 
 // SPACING debe superar el ancho del bloque (carta + gap + info) para que
 // dos proyectos consecutivos no se solapen al desplazarse.
@@ -64,8 +72,139 @@ function makeDispMap(W: number, H: number, depth: number): string {
   return out.toDataURL()
 }
 
+/* El interior del cristal y el texto de la ficha no dependen de `t` ni del ratón:
+   son los mismos nodos en todos los fotogramas. Aislados en componentes memoizados,
+   React deja de reconstruirlos y compararlos en cada frame de scroll — el DOM que
+   sale es exactamente el mismo, sólo se ahorra el trabajo de llegar a él. */
+
+const GlassBody = memo(function GlassBody({ image, alt }: { image: string; alt: string }) {
+  return (
+    <>
+      {/* Screenshot: enmarcada dentro del cristal, deja ver el marco alrededor */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 26,
+          borderRadius: 20,
+          overflow: 'hidden',
+          boxShadow: 'var(--glass-shadow-media), inset 0 0 0 1px var(--glass-border-strong)',
+        }}
+      >
+        <img
+          src={image}
+          alt={alt}
+          draggable={false}
+          decoding="async"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'top center',
+            display: 'block',
+          }}
+        />
+      </div>
+
+      {/* Lens rim gradient border */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 32,
+          padding: '1.5px',
+          background: 'var(--glass-spec)',
+          WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+          WebkitMaskComposite: 'xor',
+          mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+          maskComposite: 'exclude',
+          pointerEvents: 'none',
+        }}
+      />
+      {/* Inner magnification glow */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 32,
+          boxShadow: 'var(--glass-inner)',
+          pointerEvents: 'none',
+        }}
+      />
+      {/* Top specular */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0,
+          height: '38%',
+          background: 'var(--glass-sheen)',
+          borderRadius: '32px 42px 0 0',
+          pointerEvents: 'none',
+        }}
+      />
+    </>
+  )
+})
+
+const InfoBody = memo(function InfoBody({
+  p, url, host, inner, caseStudy, onCardClick,
+}: {
+  p: { title: string; sub: string; desc: string; loc: string }
+  url: string
+  host: string
+  inner: boolean
+  caseStudy: string
+  onCardClick: (e: React.MouseEvent<HTMLAnchorElement>) => void
+}) {
+  return (
+    <>
+      <h3
+        style={{
+          fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+          fontWeight: 500,
+          fontSize: 27,
+          lineHeight: 1.04,
+          letterSpacing: '-0.012em',
+          color: 'var(--card-ink)',
+          margin: 0,
+        }}
+      >
+        {p.title}
+      </h3>
+      <p style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--card-sub)', margin: '14px 0 0' }}>{p.sub}</p>
+      <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--card-faint)', margin: '11px 0 0' }}>{p.desc}</p>
+      <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--card-loc)', margin: '12px 0 0' }}>{p.loc}</p>
+      <a
+        href={url}
+        target={inner ? undefined : '_blank'}
+        rel={inner ? undefined : 'noopener noreferrer'}
+        onClick={onCardClick}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 7,
+          marginTop: 16,
+          paddingBottom: 3,
+          borderBottom: '1px solid var(--card-rule)',
+          fontSize: 12,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          color: 'var(--card-ink)',
+          textDecoration: 'none',
+          cursor: 'none',
+        }}
+      >
+        {/* La diagonal anuncia «esto sale del sitio»; el caso de estudio
+            no sale, así que se queda con la flecha recta. */}
+        {inner ? caseStudy : host}{' '}
+        <span style={{ color: 'var(--ink)' }}>{inner ? '→' : '↗'}</span>
+      </a>
+    </>
+  )
+})
+
 export default function Projects() {
   const { t: dict } = useLanguage()
+  const router = useRouter()
   const rootRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const [t, setT] = useState(0)
@@ -73,8 +212,16 @@ export default function Projects() {
   const [my, setMy] = useState(0)
   const [dispMap, setDispMap] = useState('')
   const [isMobile, setIsMobile] = useState(false)
-  const drag = useRef<{ active: boolean; startX: number; startY: number } | null>(null)
+  // `travel` se mide al empezar el arrastre y no en cada movimiento: leer
+  // offsetHeight con el ratón apretado obliga al navegador a recalcular el layout
+  // decenas de veces por segundo, y el raíl no cambia de alto mientras se arrastra.
+  const drag = useRef<{ active: boolean; startX: number; startY: number; travel: number } | null>(null)
   const dragged = useRef(false)
+  // El parallax se acumula aquí y se vuelca UNA vez por frame. Un ratón de 1000 Hz
+  // dispara mousemove ~16 veces entre dos frames: sin esto, cada una de ellas
+  // re-renderiza el carrusel entero para pintar el mismo fotograma.
+  const point = useRef<{ x: number; y: number } | null>(null)
+  const mmFrame = useRef(0)
   const n = PROJECTS.length
 
   // Mismo corte que .about-grid / .contact-grid en globals.css.
@@ -128,35 +275,57 @@ export default function Projects() {
   }, [n, isMobile])
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
-    drag.current = { active: true, startX: e.clientX, startY: window.scrollY }
+    const root = rootRef.current
+    drag.current = {
+      active: true,
+      startX: e.clientX,
+      startY: window.scrollY,
+      travel: root ? root.offsetHeight - window.innerHeight : 0,
+    }
     dragged.current = false
+  }, [])
+
+  // Vuelca el último punto conocido del ratón al estado. Corre como mucho una vez
+  // por frame, así que el getBoundingClientRect —que fuerza layout— también.
+  const flushPointer = useCallback(() => {
+    mmFrame.current = 0
+    const pt = point.current
+    const r = stageRef.current?.getBoundingClientRect()
+    if (!pt || !r) return
+    setMx(clamp(((pt.x - r.left) / r.width - 0.5) * 2, -1, 1))
+    setMy(clamp(((pt.y - r.top) / r.height - 0.5) * 2, -1, 1))
   }, [])
 
   // El arrastre horizontal no toca `t` directamente: empuja el scroll de la página,
   // que es quien manda. Un recorrido de SPACING px equivale a un proyecto.
   const onMouseMove = useCallback((e: React.MouseEvent) => {
-    const r = stageRef.current?.getBoundingClientRect()
-    if (r) {
-      setMx(clamp(((e.clientX - r.left) / r.width - 0.5) * 2, -1, 1))
-      setMy(clamp(((e.clientY - r.top) / r.height - 0.5) * 2, -1, 1))
-    }
+    point.current = { x: e.clientX, y: e.clientY }
+    if (!mmFrame.current) mmFrame.current = requestAnimationFrame(flushPointer)
 
-    const root = rootRef.current
-    if (drag.current?.active && root) {
-      const dx = e.clientX - drag.current.startX
+    const d = drag.current
+    if (d?.active) {
+      const dx = e.clientX - d.startX
       if (Math.abs(dx) > 4) dragged.current = true
-      const travel = root.offsetHeight - window.innerHeight
-      const perUnit = travel / (n + TAIL) // px de scroll por proyecto
+      const perUnit = d.travel / (n + TAIL) // px de scroll por proyecto
       // `behavior: auto` anula el scroll-behavior: smooth global, que aquí
       // convertiría el arrastre en un deslizamiento con retardo.
-      window.scrollTo({ top: drag.current.startY - (dx / SPACING) * perUnit, behavior: 'auto' })
+      window.scrollTo({ top: d.startY - (dx / SPACING) * perUnit, behavior: 'auto' })
     }
-  }, [n])
+  }, [n, flushPointer])
 
-  // Un arrastre no debe abrir el enlace de la carta al soltar.
-  const onCardClick = useCallback((e: React.MouseEvent) => {
-    if (dragged.current) e.preventDefault()
-  }, [])
+  // Un arrastre no debe abrir el enlace de la carta al soltar. Y si el enlace es
+  // interno, lo toma el router: un <a> normal recargaría el sitio entero.
+  const onCardClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (dragged.current) {
+      e.preventDefault()
+      return
+    }
+    const href = e.currentTarget.getAttribute('href')
+    if (href && isInternal(href)) {
+      e.preventDefault()
+      router.push(href)
+    }
+  }, [router])
 
   // Dentro de un subárbol preserve-3d, Chromium entrega el clic al contenedor 3D y no
   // a la carta: el <a> nunca lo recibe. Se resuelve aquí la carta bajo el puntero
@@ -171,12 +340,18 @@ export default function Projects() {
       .map(el => el.closest('a[data-cursor-label]'))
       .find(Boolean) as HTMLAnchorElement | undefined
 
-    if (card?.href) window.open(card.href, '_blank', 'noopener,noreferrer')
-  }, [])
+    if (!card?.href) return
+    // El caso de estudio es una ruta de este mismo sitio: se navega con el router
+    // para no recargar la página entera ni abrir una pestaña de más.
+    if (card.dataset.internal) router.push(card.getAttribute('href')!)
+    else window.open(card.href, '_blank', 'noopener,noreferrer')
+  }, [router])
 
   const onMouseUp = useCallback(() => {
     if (drag.current) drag.current.active = false
   }, [])
+
+  useEffect(() => () => { if (mmFrame.current) cancelAnimationFrame(mmFrame.current) }, [])
 
   const progress = clamp(t / n, 0, 1)
 
@@ -279,6 +454,7 @@ export default function Projects() {
           <div style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d' }}>
             {PROJECTS.map(({ codename, image, url, host }, i) => {
               const p = dict.projects.items[codename as Codename]
+              const inner = isInternal(url)
               const off = (i - t) + 1
               const a = Math.abs(off)
               const pf = clamp(1 - a * 0.7, 0, 1)
@@ -291,6 +467,15 @@ export default function Projects() {
               const infoTx = mx * -38 * pf
               const infoTy = my * -26 * pf
 
+              // Una carta a opacidad 0 sigue siendo una carta: el navegador le pinta
+              // igualmente el cristal —`backdrop-filter` con el feDisplacementMap—
+              // sobre 830×480 px, y eso es lo más caro de toda la página. Con
+              // `visibility: hidden` deja de pintarse del todo. El cambio se retrasa
+              // los 0.14s que dura el fundido (`visibility 0s linear 0.14s`) para que
+              // la carta no desaparezca de golpe a mitad de la transición; al volver
+              // a entrar se aplica sin retardo.
+              const gone = opacity === 0
+
               return (
                 <div
                   key={codename}
@@ -300,8 +485,9 @@ export default function Projects() {
                     top: '50%',
                     transform: `translate(-50%,-50%) translate3d(${off * SPACING + 70 + px}px,${-24 + py}px,${-a * 240}px) rotateY(${off * -8 + tiltY}deg) rotateX(${tiltX}deg)`,
                     opacity,
+                    visibility: gone ? 'hidden' : 'visible',
                     zIndex: Math.round(100 - a * 10),
-                    transition: 'transform 0.22s ease-out, opacity 0.14s ease-out',
+                    transition: `transform 0.22s ease-out, opacity 0.14s ease-out, visibility 0s linear ${gone ? '0.14s' : '0s'}`,
                     pointerEvents: a < 0.5 ? 'auto' : 'none',
                   }}
                 >
@@ -310,10 +496,11 @@ export default function Projects() {
                     {/* LIQUID GLASS CARD — la captura del sitio vive dentro del cristal */}
                     <a
                       href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      target={inner ? undefined : '_blank'}
+                      rel={inner ? undefined : 'noopener noreferrer'}
                       onClick={onCardClick}
-                      data-cursor-label={dict.projects.visit}
+                      data-internal={inner ? '1' : undefined}
+                      data-cursor-label={inner ? dict.projects.viewCase : dict.projects.visit}
                       style={{
                         position: 'relative',
                         display: 'block',
@@ -329,66 +516,7 @@ export default function Projects() {
                         cursor: 'none',
                       }}
                     >
-                      {/* Screenshot: enmarcada dentro del cristal, deja ver el marco alrededor */}
-                      <div
-                        style={{
-                          position: 'absolute',
-                          inset: 26,
-                          borderRadius: 20,
-                          overflow: 'hidden',
-                          boxShadow: 'var(--glass-shadow-media), inset 0 0 0 1px var(--glass-border-strong)',
-                        }}
-                      >
-                        <img
-                          src={image}
-                          alt={p.title}
-                          draggable={false}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            objectPosition: 'top center',
-                            display: 'block',
-                          }}
-                        />
-                      </div>
-
-                      {/* Lens rim gradient border */}
-                      <div
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          borderRadius: 32,
-                          padding: '1.5px',
-                          background: 'var(--glass-spec)',
-                          WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
-                          WebkitMaskComposite: 'xor',
-                          mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
-                          maskComposite: 'exclude',
-                          pointerEvents: 'none',
-                        }}
-                      />
-                      {/* Inner magnification glow */}
-                      <div
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          borderRadius: 32,
-                          boxShadow: 'var(--glass-inner)',
-                          pointerEvents: 'none',
-                        }}
-                      />
-                      {/* Top specular */}
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: 0, left: 0, right: 0,
-                          height: '38%',
-                          background: 'var(--glass-sheen)',
-                          borderRadius: '32px 42px 0 0',
-                          pointerEvents: 'none',
-                        }}
-                      />
+                      <GlassBody image={image} alt={p.title} />
                     </a>
 
                     {/* INFO */}
@@ -403,44 +531,14 @@ export default function Projects() {
                         willChange: 'transform',
                       }}
                     >
-                      <h3
-                        style={{
-                          fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-                          fontWeight: 500,
-                          fontSize: 27,
-                          lineHeight: 1.04,
-                          letterSpacing: '-0.012em',
-                          color: 'var(--card-ink)',
-                          margin: 0,
-                        }}
-                      >
-                        {p.title}
-                      </h3>
-                      <p style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--card-sub)', margin: '14px 0 0' }}>{p.sub}</p>
-                      <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--card-faint)', margin: '11px 0 0' }}>{p.desc}</p>
-                      <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--card-loc)', margin: '12px 0 0' }}>{p.loc}</p>
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={onCardClick}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 7,
-                          marginTop: 16,
-                          paddingBottom: 3,
-                          borderBottom: '1px solid var(--card-rule)',
-                          fontSize: 12,
-                          letterSpacing: '0.14em',
-                          textTransform: 'uppercase',
-                          color: 'var(--card-ink)',
-                          textDecoration: 'none',
-                          cursor: 'none',
-                        }}
-                      >
-                        {host} <span style={{ color: 'var(--ink)' }}>&#8599;</span>
-                      </a>
+                      <InfoBody
+                        p={p}
+                        url={url}
+                        host={host}
+                        inner={inner}
+                        caseStudy={dict.projects.caseStudy}
+                        onCardClick={onCardClick}
+                      />
                     </div>
                   </div>
                 </div>
@@ -558,12 +656,13 @@ function ProjectsMobile() {
       <div ref={railRef} onScroll={onScroll} className="projects-rail">
         {PROJECTS.map(({ codename, image, url, host }) => {
           const p = dict.projects.items[codename as Codename]
+          const inner = isInternal(url)
           return (
             <a
               key={codename}
               href={url}
-              target="_blank"
-              rel="noopener noreferrer"
+              target={inner ? undefined : '_blank'}
+              rel={inner ? undefined : 'noopener noreferrer'}
               style={{
                 display: 'block',
                 borderRadius: 26,
@@ -633,7 +732,8 @@ function ProjectsMobile() {
                     color: 'var(--card-ink)',
                   }}
                 >
-                  {host} <span style={{ color: 'var(--ink)' }}>&#8599;</span>
+                  {inner ? dict.projects.caseStudy : host}{' '}
+                  <span style={{ color: 'var(--ink)' }}>{inner ? '→' : '↗'}</span>
                 </span>
               </div>
             </a>

@@ -66,6 +66,23 @@
   --dot-past: #666;
 
   --chip-shadow: 0 18px 46px rgba(0,0,0,0.45);   /* etiqueta del cursor */
+
+  /* Superficie neumórfica de Raccoony (/raccoony). No es cristal: el cristal deja
+     ver lo que hay detrás y aquí lo que se quiere es lo contrario, una masa opaca
+     que se abomba. La app tiene su propio claro/oscuro, así que estos tokens
+     siguen al tema del sitio en lugar de imponer un panel blanco sobre el carbón.
+
+     En oscuro la luz superior casi no existe (0.05): un realce fuerte sobre un
+     gris hondo se lee como plástico brillante, no como relieve. El volumen lo
+     hace aquí la sombra negra. */
+  --neu-bg: #24282f;
+  --neu-well: #202329;                              /* huecos y pistas hundidas */
+  --neu-raised: 10px 10px 22px rgba(0,0,0,0.5), -10px -10px 22px rgba(255,255,255,0.05);
+  --neu-raised-sm: 5px 5px 12px rgba(0,0,0,0.46), -5px -5px 12px rgba(255,255,255,0.045);
+  --neu-inset: inset 7px 7px 15px rgba(0,0,0,0.55), inset -7px -7px 15px rgba(255,255,255,0.05);
+  --neu-ink: #e8ebf1;
+  --neu-mute: rgb(232 235 241 / 0.58);
+  --neu-edge: rgba(255,255,255,0.06);
 }
 
 :root[data-theme="light"] {
@@ -121,6 +138,18 @@
   --dot-past: rgba(22,19,15,0.42);
 
   --chip-shadow: 0 18px 46px rgba(22,19,15,0.22);
+
+  /* Neumorfismo en su forma canónica: gris azulado, realce blanco casi puro y
+     una sombra que NO es negra sino el propio gris oscurecido (163,177,198) —
+     el negro sobre esta superficie la ensucia en vez de hundirla. */
+  --neu-bg: #e6ebf1;
+  --neu-well: #dde3ea;
+  --neu-raised: 10px 10px 22px rgba(163,177,198,0.55), -10px -10px 22px rgba(255,255,255,0.95);
+  --neu-raised-sm: 5px 5px 12px rgba(163,177,198,0.5), -5px -5px 12px rgba(255,255,255,0.92);
+  --neu-inset: inset 7px 7px 15px rgba(163,177,198,0.6), inset -7px -7px 15px rgba(255,255,255,0.95);
+  --neu-ink: #2b3448;
+  --neu-mute: rgb(43 52 72 / 0.62);
+  --neu-edge: rgba(255,255,255,0.75);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -308,6 +337,146 @@ html, body { margin: 0; padding: 0; background: var(--bg); }
   flex: 0 0 84vw;
   max-width: 420px;
   scroll-snap-align: start;
+}
+
+/* ── Raccoony (/raccoony) ─────────────────────────────────────────────────────
+   Rejillas del caso de estudio. Viven aquí y no inline porque todas dependen de
+   un breakpoint, y `style={{}}` no admite media queries. */
+
+/* Portada: texto a la izquierda, la carátula de la app a la derecha. Bajo 900px
+   el texto va primero y la imagen debajo — al revés, la portada empuja el
+   titular fuera de la primera pantalla en móvil. */
+.rac-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr);
+  gap: clamp(36px, 5vw, 72px);
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .rac-hero { grid-template-columns: 1fr; gap: 40px; }
+}
+
+/* Ficha técnica. `auto-fit` en vez de un número fijo de columnas: los pares
+   clave/valor tienen anchos muy distintos entre ES e EN y así ninguno se parte.
+
+   Los filetes son bordes de cada celda, no un fondo visto a través de un `gap`
+   de 1px: con `gap` el hueco que dejan las celdas que faltan para completar la
+   última fila se pinta entero del color del filete, y aparece un bloque gris. */
+.rac-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  border-top: 1px solid var(--hair);
+}
+
+.rac-meta > * {
+  padding: 18px clamp(14px, 2vw, 24px);
+  border-bottom: 1px solid var(--hair);
+  border-right: 1px solid var(--hair);
+}
+
+.rac-meta > *:last-child { border-right: none; }
+
+/* Apilada en una columna, el filete vertical deja de separar columnas y pasa a
+   ser un borde suelto a la derecha de cinco de las seis filas. */
+@media (max-width: 560px) {
+  .rac-meta { grid-template-columns: 1fr; }
+  .rac-meta > * { border-right: none; }
+}
+
+/* Los cuatro pasos de la alarma y los tres pilares de arquitectura comparten
+   forma: una fila que colapsa a dos columnas y luego a una. */
+.rac-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(20px, 2.5vw, 36px);
+}
+
+.rac-pillars {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(20px, 2.5vw, 36px);
+}
+
+@media (max-width: 900px) {
+  .rac-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+  .rac-pillars { grid-template-columns: 1fr; gap: 32px; }
+}
+
+@media (max-width: 560px) {
+  .rac-steps { grid-template-columns: 1fr; }
+}
+
+/* Catorce módulos: rejilla fluida sin número de columnas fijo, separada por
+   filetes en vez de por cajas — cajas sobre cajas dentro de una sección que ya
+   es una lista larga convierten la página en un damero.
+
+   Filetes por borde de celda, no fondo bajo un `gap`: catorce módulos nunca
+   llenan la última fila y ese hueco se pintaría de gris macizo. */
+.rac-modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  border-top: 1px solid var(--hair);
+  border-left: 1px solid var(--hair);
+}
+
+.rac-modules > * {
+  padding: clamp(20px, 2.4vw, 30px);
+  border-right: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair);
+}
+
+/* Variante densa de teléfono (ver ModulesCompact en components/Raccoony.tsx).
+   Dos columnas FIJAS, no `auto-fill`: el componente calcula tras qué celda va el
+   panel desplegado a partir de que la fila tiene dos, y con un número de
+   columnas variable ese cálculo dejaría de cuadrar. Los filetes van en las
+   celdas —que aquí los pinta el componente— para que el panel de ancho completo
+   cierre su fila igual que las demás. */
+.rac-modules-compact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--hair);
+  border-left: 1px solid var(--hair);
+}
+
+/* Las tres capturas van a tamaño de teléfono: en escritorio caben las tres en
+   fila; por debajo pasan a carril con snap, como el carrusel de Projects. */
+.rac-screens {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(24px, 3vw, 52px);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .rac-screens {
+    display: flex;
+    grid-template-columns: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scroll-padding-left: 20px;
+    margin-inline: calc(clamp(24px, 6vw, 120px) * -1);
+    padding-inline: clamp(24px, 6vw, 120px);
+    padding-bottom: 8px;
+    scrollbar-width: none;
+  }
+  .rac-screens::-webkit-scrollbar { display: none; }
+  .rac-screens > * { flex: 0 0 76vw; max-width: 360px; scroll-snap-align: start; }
+}
+
+/* Sistema de diseño: los tres principios a la izquierda, la demostración
+   neumórfica —el único sitio de la página donde se ve la superficie real de la
+   app— a la derecha, pegada arriba. */
+.rac-design {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.86fr);
+  gap: clamp(36px, 5vw, 80px);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .rac-design { grid-template-columns: 1fr; gap: 44px; }
 }
 
 /* Los enlaces del header saltan entre secciones; sin esto el brinco es seco. */

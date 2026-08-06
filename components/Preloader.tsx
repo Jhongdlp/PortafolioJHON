@@ -25,10 +25,22 @@ export default function Preloader() {
 
   // Lock the page while the curtain is up, release it once we're done.
   // (This component never unmounts, so we can't rely on effect cleanup.)
+  // `overflow: hidden` alone doesn't stop a trackpad/wheel gesture made during
+  // the lock from being "banked" and dumped on the page the instant it
+  // unlocks — that sudden jump is what made the Projects carousel land on a
+  // half-transitioned, oddly placed card. Eating the events outright removes
+  // the bank.
   useEffect(() => {
     document.body.style.overflow = done ? '' : 'hidden'
+    if (done) return
+
+    const block = (e: Event) => e.preventDefault()
+    window.addEventListener('wheel', block, { passive: false })
+    window.addEventListener('touchmove', block, { passive: false })
     return () => {
       document.body.style.overflow = ''
+      window.removeEventListener('wheel', block)
+      window.removeEventListener('touchmove', block)
     }
   }, [done])
 

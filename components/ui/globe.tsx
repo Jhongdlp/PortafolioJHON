@@ -79,15 +79,27 @@ export function Globe({
     window.addEventListener('resize', onResize)
     onResize()
 
-    const globe = createGlobe(canvasRef.current!, {
+    const canvas = canvasRef.current!
+    const globe = createGlobe(canvas, {
       ...config,
       width: width * 2,
       height: width * 2,
       onRender,
     })
 
-    setTimeout(() => (canvasRef.current!.style.opacity = '1'))
+    // El globo vive en el pie de página, a varias pantallas de distancia del hero.
+    // Sin esto sigue rasterizando WebGL a 60 fps mientras el visitante lee arriba, y
+    // ese trabajo se lo quita al scroll y al carrusel de Projects. Fuera de pantalla
+    // no se ve, así que se puede parar sin que cambie nada de lo que se ve.
+    const io = new IntersectionObserver(
+      ([entry]) => globe.toggle(entry.isIntersecting),
+      { rootMargin: '200px' },
+    )
+    io.observe(canvas)
+
+    setTimeout(() => (canvas.style.opacity = '1'))
     return () => {
+      io.disconnect()
       globe.destroy()
       window.removeEventListener('resize', onResize)
     }

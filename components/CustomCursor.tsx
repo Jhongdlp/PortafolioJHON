@@ -13,6 +13,11 @@ const BUBBLE = 124
 const MIN_SCALE = SIZES[0] / BUBBLE
 const GROW_LERP = 0.13
 
+// Frames que se sigue resolviendo qué hay bajo el cursor tras el último gesto. Las
+// cartas de Projects tardan 0.22s (~14 frames) en asentarse; 25 cubre la cola con
+// margen sin dejar el hit-test corriendo en una página quieta.
+const PROBE_FRAMES = 25
+
 export default function CustomCursor() {
   const dotsRef     = useRef<(HTMLDivElement | null)[]>(Array(TRAIL + 1).fill(null))
   const dotsLayer   = useRef<HTMLDivElement>(null)
@@ -27,6 +32,8 @@ export default function CustomCursor() {
   const target   = useRef(0) // 1 sobre un elemento etiquetado, 0 fuera
   const grow     = useRef(0) // valor interpolado: el crecimiento real
   const [label, setLabel] = useState<string | null>(null)
+  // Frames que quedan por resolver la etiqueta bajo el cursor. Ver `wake`.
+  const probe    = useRef(0)
   // En táctil no hay puntero que seguir: el rastro se quedaría clavado donde
   // ocurrió el último toque, flotando sobre el contenido para siempre.
   const [canHover, setCanHover] = useState(false)
@@ -40,8 +47,22 @@ export default function CustomCursor() {
   }, [])
 
   useEffect(() => {
+    // El bucle NO gira siempre: se despierta al mover el ratón o al desplazar la
+    // página y se apaga solo en cuanto todo ha llegado a su sitio. Un rAF perpetuo
+    // sobre una capa `mix-blend-mode: difference` a pantalla completa obliga al
+    // navegador a recomponer el viewport entero 60 veces por segundo aunque no se
+    // mueva nada, y es tiempo que se le roba al scroll y al carrusel.
+    const wake = () => {
+      // Tras un gesto hay que seguir resolviendo la etiqueta unos frames: las cartas
+      // del carrusel llevan `transition: transform 0.22s`, así que siguen moviéndose
+      // bajo un ratón quieto después del último evento de scroll.
+      probe.current = PROBE_FRAMES
+      if (!raf.current) raf.current = requestAnimationFrame(tick)
+    }
+
     const onMove = (e: MouseEvent) => {
       mouse.current = { x: e.clientX, y: e.clientY }
+      wake()
     }
 
     const tick = () => {
@@ -68,22 +89,29 @@ export default function CustomCursor() {
       }
 
       // Cualquier elemento con data-cursor-label expande el cursor y muestra su texto.
-      // Se resuelve por frame, no con mouseover, porque las cartas se desplazan con el
-      // parallax bajo un ratón quieto y el navegador no reevalúa el hover sin movimiento.
+      // No se resuelve con mouseover porque las cartas se desplazan con el parallax
+      // bajo un ratón quieto y el navegador no reevalúa el hover sin movimiento; pero
+      // tampoco en cada frame: `elementsFromPoint` fuerza un recálculo de estilo y un
+      // hit-test de todo el documento (~0,12 ms medido sobre el carrusel, es decir
+      // ~7 ms de cada segundo gastados sólo en esto, con la página quieta incluida).
+      // Basta con hacerlo mientras algo se mueve — que es lo que cuenta `probe`.
       // elementsFromPoint (plural) y no elementFromPoint: dentro de un subárbol
       // preserve-3d, el singular devuelve el contenedor en vez de la carta.
-      const hit = document
-        .elementsFromPoint(m.x, m.y)
-        .find(el => el.closest('[data-cursor-label]'))
-      const next = hit?.closest('[data-cursor-label]')?.getAttribute('data-cursor-label') ?? null
-      if (next !== labelRef.current) {
-        labelRef.current = next
-        target.current = next ? 1 : 0
-        // Al entrar el texto se pone ya; al salir se mantiene hasta que la burbuja
-        // termina de encogerse, para que no desaparezca de golpe.
-        if (next) {
-          shownRef.current = next
-          setLabel(next)
+      if (probe.current > 0) {
+        probe.current--
+        const hit = document
+          .elementsFromPoint(m.x, m.y)
+          .find(el => el.closest('[data-cursor-label]'))
+        const next = hit?.closest('[data-cursor-label]')?.getAttribute('data-cursor-label') ?? null
+        if (next !== labelRef.current) {
+          labelRef.current = next
+          target.current = next ? 1 : 0
+          // Al entrar el texto se pone ya; al salir se mantiene hasta que la burbuja
+          // termina de encogerse, para que no desaparezca de golpe.
+          if (next) {
+            shownRef.current = next
+            setLabel(next)
+          }
         }
       }
 
@@ -107,15 +135,38 @@ export default function CustomCursor() {
         setLabel(null)
       }
 
+      // ¿Queda algo por mover? El rastro se considera parado cuando el último punto
+      // —el más lento de todos— está a menos de medio píxel de su objetivo.
+      const settled =
+        probe.current <= 0 &&
+        Math.abs(target.current - g) < 0.002 &&
+        Math.abs(m.x - p[TRAIL].x) < 0.5 &&
+        Math.abs(m.y - p[TRAIL].y) < 0.5
+
+      if (settled) {
+        // Se cuadra todo en su sitio exacto para no dormirse a medio píxel del final.
+        for (let i = 0; i <= TRAIL; i++) { p[i].x = m.x; p[i].y = m.y }
+        dotsRef.current.forEach(dot => {
+          if (dot) dot.style.transform = `translate(${m.x}px,${m.y}px)`
+        })
+        grow.current = target.current
+        raf.current = 0
+        return
+      }
+
       raf.current = requestAnimationFrame(tick)
     }
 
     document.addEventListener('mousemove', onMove, { passive: true })
+    // El scroll mueve las cartas bajo el puntero: hay que volver a mirar qué hay debajo.
+    window.addEventListener('scroll', wake, { passive: true })
     raf.current = requestAnimationFrame(tick)
 
     return () => {
       document.removeEventListener('mousemove', onMove)
+      window.removeEventListener('scroll', wake)
       cancelAnimationFrame(raf.current)
+      raf.current = 0
     }
   }, [])
 
