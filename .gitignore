@@ -52,3 +52,7 @@ desktop.ini
 # Cache
 .cache/
 .turbo/
+
+# Material fuente de imágenes: los originales sin optimizar se quedan en local.
+# Lo que usa el sitio son las copias ya convertidas en public/projects/.
+/public/Racconty/
