@@ -10,6 +10,7 @@ const PROJECTS = [
   { codename: 'UTITECH', image: '/projects/indoamerica.webp', url: 'https://indoamericatech.com/laboratorios-de-ia', host: 'indoamericatech.com' },
   { codename: 'INSIDEEBB', image: '/projects/insideeb.webp', url: 'https://insideebb.com/en', host: 'insideebb.com' },
   { codename: 'KAMMEL', image: '/projects/kammel.png', url: 'https://kammel-ssh.vercel.app/', host: 'kammel-ssh.vercel.app' },
+  { codename: 'TENSORMESH', image: '/projects/tensormesh.webp', url: 'https://tensormesh.vercel.app/', host: 'tensormesh.vercel.app' },
   // Raccoony no tiene web: su carta lleva al caso de estudio de este mismo sitio.
   { codename: 'RACCOONY', image: '/raccoony/cover.webp', url: '/raccoony', host: '/raccoony' },
 ] as const

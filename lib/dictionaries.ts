@@ -80,6 +80,12 @@ const dictionaries = {
           desc: 'App móvil todo-en-uno: cliente SSH, terminal, explorador SFTP y editor de código. Permite ejecutar agentes de IA (Claude Code, Gemini CLI) directamente por SSH.',
           loc: 'Open source (2026)',
         },
+        TENSORMESH: {
+          title: 'Algoritmos de IA en 3D',
+          sub: 'Seis laboratorios interactivos con WebGPU',
+          desc: 'Galería navegable donde embeddings, descenso de gradiente, HNSW, MCTS, K-Means y mapas de Kohonen se simulan en vivo sobre tu GPU con compute shaders.',
+          loc: 'Web · WebGPU (2026)',
+        },
         RACCOONY: {
           title: 'Analizador de vida con IA',
           sub: 'App móvil para mejorar tu calidad de vida',
@@ -313,7 +319,7 @@ const dictionaries = {
       bio: {
         lead:
           'A full-stack developer and AI specialist connecting people with brands & businesses through code and intelligent design. A combination of strong engineering and refined execution to deliver premium results —',
-        aside: 'in other words, ‘creating cool sh*t on the internet.’',
+        aside: 'in other words, ‘creating cool stuff on the internet.’',
       },
       capabilities: [
         'Full-Stack Engineering',
@@ -352,6 +358,12 @@ const dictionaries = {
           sub: 'Open-source terminal and code editor',
           desc: 'All-in-one mobile app: SSH client, terminal, SFTP file explorer and code editor. Runs AI coding agents (Claude Code, Gemini CLI) directly over SSH.',
           loc: 'Open source (2026)',
+        },
+        TENSORMESH: {
+          title: '3D AI Algorithms',
+          sub: 'Six interactive WebGPU laboratories',
+          desc: 'A navigable gallery where embeddings, gradient descent, HNSW, MCTS, K-Means and Kohonen maps run live on your own GPU through compute shaders.',
+          loc: 'Web · WebGPU (2026)',
         },
         RACCOONY: {
           title: 'AI life analyser',
