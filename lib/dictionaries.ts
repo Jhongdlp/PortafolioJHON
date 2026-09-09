@@ -287,6 +287,11 @@ const dictionaries = {
     },
     footer: {
       backToTop: 'Volver arriba',
+      tagline: 'Ingeniería, diseño e IA para productos que salen a producción, no a una demo.',
+      nav: 'Navegación',
+      work: 'Proyectos',
+      elsewhere: 'En otros sitios',
+      email: 'Email',
     },
   },
 
@@ -557,6 +562,11 @@ const dictionaries = {
     },
     footer: {
       backToTop: 'Back to top',
+      tagline: 'Engineering, design and AI for products that ship to production, not to a demo.',
+      nav: 'Navigation',
+      work: 'Work',
+      elsewhere: 'Elsewhere',
+      email: 'Email',
     },
   },
 } as const

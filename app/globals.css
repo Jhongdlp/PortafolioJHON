@@ -314,6 +314,8 @@ html, body { margin: 0; padding: 0; background: var(--bg); }
    El !important es obligado: About declara el padding inline y eso gana a la clase. */
 @media (max-width: 900px) {
   .editorial-section { padding-bottom: 56px !important; }
+  /* El pie es la excepción: su grabado tiene que morir en el filo de la página. */
+  footer.editorial-section { padding-bottom: 0 !important; }
 }
 
 /* Projects — carril móvil. El carrusel 3D de escritorio secuestra la rueda y el
@@ -677,3 +679,7 @@ html { scroll-behavior: smooth; }
 .link-with-arrow:hover span {
   transform: translateX(4px);
 }
+
+/* Grabado del pie: en claro, el relleno blanco del edificio cae sobre el papel con
+   `multiply` y sólo queda la línea impresa. En oscuro el blanco es el dibujo. */
+:root[data-theme="light"] .footer-engraving { mix-blend-mode: multiply; }

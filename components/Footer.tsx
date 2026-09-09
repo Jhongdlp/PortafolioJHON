@@ -1,82 +1,96 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import type { COBEOptions } from 'cobe'
 import { useLanguage } from '@/lib/i18n'
-import { useTheme } from '@/lib/theme'
 import { GRAIN } from '@/lib/grain'
-import { Globe } from '@/components/ui/globe'
-
-const NAME = 'JHONGDLP'
 
 const EASE = [0.16, 1, 0.3, 1] as const
 
 const INK = 'var(--ink)'
 const BG = 'var(--bg)'
-const HAIR = 'var(--hair)'
+const MUTE = 'var(--mute)'
 // Sin color de acento: el naranja queda reservado al logo (ver Header).
 
-// El globo de cobe se pinta en WebGL: no ve el CSS, así que su paleta no puede
-// salir de las variables del tema y hay que dársela a mano, una por tema.
-const MARKERS: COBEOptions['markers'] = [
-  { location: [40.4168, -3.7038], size: 0.08 }, // Madrid
-  { location: [4.711, -74.0721], size: 0.08 }, // Bogotá
-  { location: [19.4326, -99.1332], size: 0.07 }, // CDMX
-  { location: [40.7128, -74.006], size: 0.09 }, // Nueva York
-  { location: [-34.6037, -58.3816], size: 0.06 }, // Buenos Aires
-  { location: [51.5074, -0.1278], size: 0.06 }, // Londres
-  { location: [35.6762, 139.6503], size: 0.05 }, // Tokio
+// Los mismos destinos que la barra: el pie es su reflejo al final de la página.
+const NAV_HREFS = ['#proyectos', '#sobre-mi', '#contacto']
+
+// Recorte de PROJECTS (ver Projects.tsx): los que tienen sitio propio y el caso de
+// estudio. La lista de allí es el carrusel entero; aquí sólo caben cuatro.
+const WORK = [
+  { label: 'Raccoony', href: '/raccoony' },
+  { label: 'TensorMesh', href: 'https://tensormesh.vercel.app/' },
+  { label: 'Bizzio', href: 'https://bizzio.shop/' },
+  { label: 'InsideEBB', href: 'https://insideebb.com/en' },
 ]
 
-const GLOBE_BASE = {
-  width: 800,
-  height: 800,
-  onRender: () => {},
-  devicePixelRatio: 2,
-  phi: 0,
-  theta: 0.25,
-  mapSamples: 16000,
-  markers: MARKERS,
-} satisfies Partial<COBEOptions>
+// Copia corta de SOCIALS (Contact.tsx). Se duplica a propósito: importarlo de allí
+// arrastraría todo el formulario al bundle de /raccoony, que no lo monta.
+const SOCIAL = [
+  { label: 'GitHub', href: 'https://github.com/Jhongdlp' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/jhon-guadalupe-2a4194382/' },
+  { label: 'X', href: 'https://x.com/jhongdlp' },
+]
 
-// El globo va SIEMPRE en contra del fondo: esfera de papel sobre el carbón, esfera de
-// tinta sobre el papel. Es lo contrario de lo que pide el instinto, pero un globo del
-// color de su fondo no es un globo: es un borrón que sólo existe por el relieve.
+const EMAIL = 'hello@jhongdlp.com'
 
-// Sobre fondo oscuro: la esfera es papel y la tierra se dibuja EN TINTA sobre ella.
-// En cobe eso se consigue con mapBrightness < 1, porque el brillo de los puntos es un
-// factor sobre baseColor: por debajo de 1 los oscurece en vez de encenderlos. `dark: 0`
-// mantiene toda la esfera iluminada — un hemisferio en sombra sobre papel se lee como
-// suciedad, no como volumen. El halo se queda cerca del fondo para que el borde no
-// reviente en un aro de luz.
-const GLOBE_ON_DARK: COBEOptions = {
-  ...GLOBE_BASE,
-  dark: 0,
-  diffuse: 0.35,
-  mapBrightness: 0.45,
-  baseColor: [0.886, 0.863, 0.8],
-  markerColor: [22 / 255, 19 / 255, 15 / 255],
-  glowColor: [0.22, 0.21, 0.2],
+/** Monograma del header a mayor cuerpo: el pie firma con la misma marca. */
+function Mark() {
+  return (
+    <svg width="40" height="33" viewBox="404 422 449 369" role="img" aria-label="JHONGDLP" style={{ display: 'block' }}>
+      <path
+        fill={INK}
+        d="m591.52 426.65c-0.47 0.38-0.79 51.8-0.7 114.27 0.08 66.07 0.52 113.16 1.03 112.58 0.49-0.55 5.04-8.87 10.12-18.5 5.08-9.62 13.58-25.06 18.88-34.31 5.31-9.24 12.69-20.94 16.41-26l6.76-9.19-0.52-139c-39.63-0.41-51.52-0.23-51.98 0.15zm142.98 121.73c-3.85 0.73-10.83 2.58-15.5 4.11-4.67 1.54-12.77 4.94-18 7.56-5.22 2.62-12.65 6.98-16.5 9.69-3.85 2.71-10.6 8.52-15 12.92-4.4 4.39-11.04 12.23-14.76 17.41-3.72 5.19-9.64 15.28-13.15 22.43-3.52 7.15-9.64 21.55-13.6 32-3.96 10.45-9.35 23.5-11.97 29-2.63 5.5-7.64 13.79-11.15 18.42-3.5 4.64-9.52 10.97-13.37 14.07-3.85 3.11-9.47 7.03-12.5 8.72-3.02 1.69-8.76 4.25-12.75 5.68-3.99 1.44-11.41 3.15-16.5 3.8-7.16 0.92-11.34 0.92-18.5 0-5.09-0.65-12.96-2.53-17.5-4.17-4.54-1.63-11.17-4.84-14.75-7.12-3.58-2.29-8.7-6.01-11.39-8.28-2.69-2.27-7.03-6.82-9.64-10.12-2.61-3.3-6.57-9.6-8.8-14-2.23-4.4-4.97-11.83-6.1-16.5-1.13-4.67-2.06-9.51-2.06-10.75l-0.01-2.25h-53c0.89 10.46 1.78 16.65 2.55 20.5 0.77 3.85 2.56 10.6 3.99 15 1.42 4.4 4.09 11.15 5.93 15 1.85 3.85 6.15 11.28 9.57 16.5 3.89 5.95 10 13.25 16.34 19.54 5.56 5.52 13.5 12.33 17.62 15.14 4.13 2.81 11.55 7.14 16.5 9.64 4.95 2.5 13.28 5.95 18.5 7.67 5.23 1.72 13.78 3.77 19 4.56 5.23 0.79 15.35 1.45 22.5 1.45 7.15 0.01 16.94-0.66 21.75-1.49 4.81-0.83 12.46-2.69 17-4.14 4.54-1.45 11.63-4.17 15.75-6.06 4.13-1.88 9.75-4.84 12.5-6.58 2.75-1.73 8.38-5.7 12.5-8.82 4.13-3.12 10.68-8.99 14.56-13.04 3.88-4.05 9.12-10.29 11.65-13.87 2.52-3.58 6.15-9.2 8.07-12.5 1.92-3.3 5.3-10.27 7.52-15.5 2.22-5.23 6.72-18.05 10.02-28.5 3.29-10.45 7.42-22.15 9.17-26 1.76-3.85 5.24-10.15 7.74-14 2.51-3.85 7.53-10.08 11.16-13.84 3.64-3.76 9.53-8.8 13.11-11.19 3.58-2.4 9.42-5.57 13-7.05 3.58-1.48 8.75-3.39 11.5-4.24 4.13-1.29 13.87-1.65 56.26-2.12l51.26-0.56c-5.2-7.75-9.36-12.87-12.61-16.38-3.25-3.51-9.28-8.92-13.41-12.03-4.12-3.11-11.78-7.76-17-10.34-5.22-2.58-14-5.89-19.5-7.35-8.31-2.21-12.62-2.71-25.5-2.99-10.02-0.22-17.98 0.12-22.5 0.97zm8.5 133.12v21.5c45.25 0 50.99 0.28 50.98 1.25-0.02 0.69-1.34 3.27-2.95 5.75-1.61 2.48-5.09 6.61-7.73 9.19-2.64 2.58-7.5 6.31-10.8 8.29-3.3 1.97-8.92 4.51-12.5 5.63-4.49 1.41-10.8 2.25-20.42 2.72l-13.92 0.67c-2.69 6.2-7.34 17.11-12.06 28.25-4.73 11.14-8.6 20.81-8.6 21.5 0 0.98 5.35 1.11 25.25 0.57 19.38-0.52 27.34-1.13 34.25-2.64 4.95-1.08 12.15-3.16 16-4.62 3.85-1.46 9.92-4.26 13.5-6.21 3.58-1.96 9.42-5.71 13-8.35 3.58-2.63 9.44-7.87 13.02-11.64 3.59-3.77 8.51-9.78 10.94-13.36 2.42-3.58 6.11-10.1 8.19-14.5 2.08-4.4 4.98-12.05 6.45-17 2.42-8.15 2.71-10.87 3.04-28.75l0.36-19.75h-106z"
+      />
+    </svg>
+  )
 }
 
-// Sobre fondo claro: el mismo globo en negativo. Esfera casi negra, tierra encendida
-// (mapBrightness alto sobre base oscura) y marcadores en el hueso del texto. `dark: 1`
-// devuelve el terminador, que aquí sí suma: da esfera contra el papel.
-const GLOBE_ON_LIGHT: COBEOptions = {
-  ...GLOBE_BASE,
-  dark: 1,
-  diffuse: 1.2,
-  mapBrightness: 6,
-  baseColor: [0.16, 0.15, 0.14],
-  markerColor: [233 / 255, 228 / 255, 214 / 255],
-  glowColor: [0.82, 0.8, 0.75],
+/** Enlace del pie: apagado en reposo, tinta plena al pasar. */
+function FooterLink({ label, href }: { label: string; href: string }) {
+  const [hover, setHover] = useState(false)
+  const external = href.startsWith('http') || href.startsWith('mailto:')
+
+  return (
+    <a
+      href={href}
+      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onFocus={() => setHover(true)}
+      onBlur={() => setHover(false)}
+      style={{
+        color: hover ? INK : MUTE,
+        fontSize: 13.5,
+        lineHeight: 1.2,
+        textDecoration: 'none',
+        cursor: 'none',
+        width: 'fit-content',
+        transition: 'color 0.25s ease',
+      }}
+    >
+      {label}
+    </a>
+  )
 }
 
 export default function Footer() {
   const { t } = useLanguage()
-  const { theme } = useTheme()
-  const [hover, setHover] = useState(false)
+  const pathname = usePathname()
+  // Mismo criterio que el header: dentro de la portada las anclas son anclas; fuera,
+  // hay que volver a la raíz antes de saltar a la sección.
+  const hrefFor = (hash: string) => (pathname === '/' ? hash : `/${hash}`)
+
+  const columns = [
+    {
+      title: t.footer.nav,
+      items: t.nav.links.map((label, i) => ({ label, href: hrefFor(NAV_HREFS[i]) })),
+    },
+    { title: t.footer.work, items: WORK },
+    { title: t.footer.elsewhere, items: [...SOCIAL, { label: t.footer.email, href: `mailto:${EMAIL}` }] },
+  ]
 
   return (
     <footer
@@ -88,146 +102,134 @@ export default function Footer() {
         background: BG,
         color: INK,
         fontFamily: 'var(--font-archivo), sans-serif',
-        // El respiro inferior es deliberado: a cero, la firma queda apoyada al píxel
-        // exacto y se lee como un recorte accidental en vez de como una decisión.
-        padding: 'clamp(28px, 4vh, 44px) clamp(24px, 4vw, 60px) clamp(16px, 2.5vh, 28px)',
+        padding: 'clamp(64px, 10vh, 110px) clamp(24px, 4vw, 60px) 0',
       }}
     >
-      <div
-        aria-hidden
-        className="grain"
-        style={{
-          backgroundImage: GRAIN,
-          zIndex: 1,
-        }}
-      />
+      <div aria-hidden className="grain" style={{ backgroundImage: GRAIN, zIndex: 1 }} />
 
-      {/* FILETE — sólo el botón de subida, alineado al filo derecho */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 2,
-          display: 'flex',
-          justifyContent: 'flex-end',
-          paddingBottom: 'clamp(24px, 4vh, 40px)',
-          borderTop: `1px solid ${HAIR}`,
-          paddingTop: 20,
-        }}
-      >
-        <a
-          href="#inicio"
-          onMouseEnter={() => setHover(true)}
-          onMouseLeave={() => setHover(false)}
-          onFocus={() => setHover(true)}
-          onBlur={() => setHover(false)}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: '13px 22px',
-            borderRadius: 999,
-            // Botón perfilado que se invierte al hover: el pie no compite con el
-            // contacto, pero la salida hacia arriba sí tiene que verse.
-            border: `1px solid ${hover ? INK : HAIR}`,
-            background: hover ? INK : 'transparent',
-            color: hover ? BG : INK,
-            fontFamily: 'var(--font-jetbrains), monospace',
-            fontSize: 11,
-            fontWeight: 500,
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            textDecoration: 'none',
-            whiteSpace: 'nowrap',
-            cursor: 'none',
-            transition: 'background 0.45s ease, color 0.45s ease, border-color 0.45s ease',
-          }}
-        >
-          {t.footer.backToTop}
-          <span
-            aria-hidden
-            style={{
-              fontSize: 13,
-              lineHeight: 1,
-              color: hover ? BG : INK,
-              transform: hover ? 'translateY(-3px)' : 'translateY(0)',
-              transition: 'transform 0.55s cubic-bezier(0.16,1,0.3,1), color 0.45s ease',
-            }}
-          >
-            ↑
-          </span>
-        </a>
-      </div>
-
-      {/* FIRMA — el nombre a la escala del hero, asentado en el borde inferior.
-          Anton deja 0.33em muertos bajo la línea base y las versales sólo bajan 0.01em:
-          con interlineado 0.87 ese hueco desaparece y las letras se apoyan en el filo de
-          la página en vez de flotar. El pelín de padding evita que la máscara —que existe
-          para velar la entrada— muerda el remate superior. */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 2,
-          overflow: 'hidden',
-          paddingTop: '0.04em',
-          textAlign: 'center',
-        }}
-      >
-        <motion.div
-          initial={{ y: '18%', opacity: 0 }}
-          whileInView={{ y: '0%', opacity: 1 }}
-          // Por proporción visible y no por margen: la firma es lo último de la página y,
-          // con un margen negativo, en pantallas cortas cae fuera del área de disparo y se
-          // queda invisible para siempre — no queda scroll con el que rescatarla.
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 1.1, ease: EASE }}
-          style={{
-            fontFamily: 'var(--font-anton), sans-serif',
-            fontWeight: 400,
-            // La misma medida exacta que el titular del hero: la página abre y cierra con
-            // la misma palabra al mismo cuerpo, y el pie deja de leerse como una versión
-            // hinchada del principio.
-            display: 'inline-block',
-            fontSize: 'clamp(80px, 17vw, 260px)',
-            lineHeight: 0.86,
-            letterSpacing: '0.01em',
-            textTransform: 'uppercase',
-            whiteSpace: 'nowrap',
-            userSelect: 'none',
-          }}
-        >
-          {NAME}
-        </motion.div>
-      </div>
-
-      {/* GLOBO — asoma bajo la firma como una línea de horizonte: la caja mide menos que
-          la esfera, así que sólo se ve el casquete superior y el resto queda cortado por
-          el filo de la página. La máscara lo funde con el fondo para que el corte no se
-          lea como un recorte. */}
       <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
+        initial={{ opacity: 0, y: 18 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.9, ease: EASE }}
+        style={{ position: 'relative', zIndex: 2 }}
+      >
+        {/* CABECERA DEL PIE — marca y lema a la izquierda, columnas de enlaces a la
+            derecha. `flexWrap` es toda la lógica responsive que hace falta: al no caber,
+            las columnas caen bajo el lema solas, sin media query ni matchMedia. */}
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 'clamp(40px, 6vw, 80px)',
+          }}
+        >
+          <div style={{ maxWidth: 340 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Mark />
+              <span
+                style={{
+                  fontFamily: 'var(--font-anton), sans-serif',
+                  fontSize: 30,
+                  lineHeight: 1,
+                  letterSpacing: '0.01em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                JHONGDLP
+              </span>
+            </div>
+            <p style={{ margin: '18px 0 0', color: MUTE, fontSize: 13, lineHeight: 1.55, maxWidth: 300 }}>
+              {t.footer.tagline}
+            </p>
+          </div>
+
+          <nav
+            aria-label={t.footer.nav}
+            style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(32px, 5vw, 88px)' }}
+          >
+            {columns.map((col) => (
+              <div key={col.title} style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 120 }}>
+                <h3
+                  style={{
+                    margin: '0 0 2px',
+                    fontFamily: 'var(--font-jetbrains), monospace',
+                    fontSize: 10.5,
+                    fontWeight: 500,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: INK,
+                  }}
+                >
+                  {col.title}
+                </h3>
+                {col.items.map((item) => (
+                  <FooterLink key={item.label} {...item} />
+                ))}
+              </div>
+            ))}
+          </nav>
+        </div>
+
+        {/* PIE DEL PIE — firma y estado, a los dos filos. */}
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 16,
+            marginTop: 'clamp(56px, 9vh, 104px)',
+            color: MUTE,
+            fontSize: 12,
+          }}
+        >
+          <span>JHONGDLP © {new Date().getFullYear()}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <svg width="11" height="11" viewBox="0 0 11 11" aria-hidden style={{ display: 'block' }}>
+              <circle cx="5.5" cy="5.5" r="4.5" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+              <circle cx="5.5" cy="5.5" r="1.8" fill="currentColor" />
+            </svg>
+            {t.contact.available}
+          </span>
+        </div>
+      </motion.div>
+
+      {/* GRABADO — San Francisco de Quito a sangre, apoyado en el filo inferior de la
+          página: los márgenes negativos cancelan el padding lateral del pie para que el
+          edificio llegue de borde a borde. El margen superior negativo lo sube hasta que
+          las torres asoman por detrás de la línea de firma, como en la referencia. En
+          claro va en `multiply` para que el relleno blanco caiga sobre el papel y sólo
+          quede la línea; en oscuro se deja tal cual, que ahí el blanco ES el dibujo. */}
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 1.4, ease: EASE, delay: 0.2 }}
+        className="footer-engraving"
         style={{
           position: 'relative',
-          zIndex: 2,
-          // La caja sigue siendo más baja que la esfera —la mitad, más o menos— para que
-          // el globo se corte por el filo de la página y no se lea como una pelota
-          // flotando; al crecer el diámetro hay que subir la caja con él o el casquete
-          // visible se queda en una raya.
-          height: 'clamp(200px, 30vw, 480px)',
-          marginTop: 'clamp(8px, 2vh, 24px)',
-          overflow: 'hidden',
-          maskImage: 'radial-gradient(120% 100% at 50% 0%, #000 60%, transparent 100%)',
-          WebkitMaskImage: 'radial-gradient(120% 100% at 50% 0%, #000 60%, transparent 100%)',
+          zIndex: 1,
+          // El grabado se recorta, no se encoge: la caja fija el alto y `cover` decide qué
+          // sobra. En pantallas estrechas sobra ancho —el edificio se sale por los dos
+          // lados con la portada centrada, que es el efecto buscado— y en muy anchas sobra
+          // alto, de ahí `top`: lo que se pierde es la base, nunca las torres.
+          // (El PNG viene recortado 152px por la izquierda para que la portada caiga en el
+          // centro exacto; el original sin recortar está en ~/Descargas.)
+          height: 'clamp(230px, 38vw, 620px)',
+          marginTop: 'clamp(-150px, -7vw, -32px)',
+          marginInline: 'calc(-1 * clamp(24px, 4vw, 60px))',
         }}
       >
-        {/* `key`: cobe compila su paleta al crear la escena y no la relee, así que
-            el cambio de tema tiene que rehacer el globo, no reconfigurarlo. */}
-        <Globe
-          key={theme}
-          config={theme === 'dark' ? GLOBE_ON_DARK : GLOBE_ON_LIGHT}
-          className="max-w-[1100px]"
+        <Image
+          src="/san-francisco.png"
+          alt=""
+          aria-hidden
+          fill
+          sizes="100vw"
+          style={{ objectFit: 'cover', objectPosition: 'center top', userSelect: 'none' }}
         />
       </motion.div>
     </footer>
