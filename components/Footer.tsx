@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { useLanguage } from '@/lib/i18n'
+import { useTheme } from '@/lib/theme'
 import { GRAIN } from '@/lib/grain'
 
 const EASE = [0.16, 1, 0.3, 1] as const
@@ -78,6 +79,7 @@ function FooterLink({ label, href }: { label: string; href: string }) {
 
 export default function Footer() {
   const { t } = useLanguage()
+  const { theme } = useTheme()
   const pathname = usePathname()
   // Mismo criterio que el header: dentro de la portada las anclas son anclas; fuera,
   // hay que volver a la raíz antes de saltar a la sección.
@@ -173,27 +175,9 @@ export default function Footer() {
           </nav>
         </div>
 
-        {/* PIE DEL PIE — firma y estado, a los dos filos. */}
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 16,
-            marginTop: 'clamp(56px, 9vh, 104px)',
-            color: MUTE,
-            fontSize: 12,
-          }}
-        >
-          <span>JHONGDLP © {new Date().getFullYear()}</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <svg width="11" height="11" viewBox="0 0 11 11" aria-hidden style={{ display: 'block' }}>
-              <circle cx="5.5" cy="5.5" r="4.5" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.5" />
-              <circle cx="5.5" cy="5.5" r="1.8" fill="currentColor" />
-            </svg>
-            {t.contact.available}
-          </span>
+        {/* PIE DEL PIE — sólo la firma, al filo izquierdo. */}
+        <div style={{ marginTop: 'clamp(56px, 9vh, 104px)', color: MUTE, fontSize: 12 }}>
+          JHONGDLP © {new Date().getFullYear()}
         </div>
       </motion.div>
 
@@ -224,7 +208,10 @@ export default function Footer() {
         }}
       >
         <Image
-          src="/san-francisco.png"
+          // Dos grabados, no un filtro: el de claro es papel con línea de tinta y el de
+          // oscuro es piedra con línea de plata. Invertir uno para hacer el otro deja el
+          // dibujo sucio, así que cada tema tiene el suyo.
+          src={theme === 'dark' ? '/san-francisco-dark.png' : '/san-francisco-light.png'}
           alt=""
           aria-hidden
           fill
